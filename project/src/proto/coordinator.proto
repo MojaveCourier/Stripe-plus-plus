@@ -30,6 +30,7 @@ service coordinatorService {
   rpc reportCommitAbort (CommitAbortKey) returns (ReplyFromCoordinator) {}; //from proxy
   rpc checkCommitAbort (AskIfSuccess) returns (RepIfSuccess) {};  //from client
   rpc uploadSetValue (RequestProxyIPPort) returns (ReplyProxyIPsPorts) {};
+  rpc uploadSubsetValue (RequestProxyIPPort) returns (ReplyProxyIPsPorts) {};
   // append
   rpc uploadAppendValue (RequestProxyIPPort) returns (ReplyProxyIPsPorts) {};
   // get
@@ -109,6 +110,7 @@ message ReplyProxyIPsPorts {
   repeated string proxyips = 3;
   repeated int32 proxyports = 4;
   repeated uint64 cluster_slice_sizes = 5;
+  repeated int32 group_ids = 6;
 }
 
 // set, del, merge

@@ -38,6 +38,7 @@ namespace ECProject
         std::vector<char *> splitCharPointer(const char *str, const std::shared_ptr<proxy_proto::AppendStripeDataPlacement> append_stripe_data_placement);
         std::vector<char *> splitCharPointer(const char *str, const coordinator_proto::ReplyProxyIPsPorts *reply_proxy_ips_ports);
         std::string gen_append_key(int stripe_id, int group_id);
+        void remove_common_zeros(std::vector<int>& vec1, std::vector<int>& vec2, std::vector<int>& vec3);
     };
 
 } // namespace ECProject

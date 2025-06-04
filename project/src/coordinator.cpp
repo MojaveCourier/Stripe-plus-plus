@@ -677,6 +677,52 @@ namespace ECProject
     return add_plans;
   }
 
+  std::vector<proxy_proto::AppendStripeDataPlacement> CoordinatorImpl::generate_sub_add_plans(Stripe *stripe, size_t subset_size)
+  {
+    int data_block_num = subset_size / m_sys_config->BlockSize;
+    int k = m_sys_config->k;
+    int r = m_sys_config->r;
+    int z = m_sys_config->z;
+    std::vector<proxy_proto::AppendStripeDataPlacement> add_plans;
+    for (int i = 0; i < stripe->num_groups; i++)
+    {
+      proxy_proto::AppendStripeDataPlacement plan;
+      int block_num = 0;
+      for (int j = 0; j < stripe->group_to_blocks[i].size(); j++)
+      {
+        int block_id = stripe->group_to_blocks[i][j];
+        if(block_id < k && block_id >= data_block_num)
+        {
+          continue;
+        }
+        addBlockToAppendPlan(plan, stripe->blocks[stripe->group_to_blocks[i][j]], m_node_table[stripe->blocks[stripe->group_to_blocks[i][j]]->map2node], std::make_pair(m_sys_config->BlockSize, 0));
+        block_num++;
+      }
+
+      size_t append_size = block_num * m_sys_config->BlockSize;
+      if(append_size == 0)
+      {
+        //plan.set_append_size(0);
+        //add_plans.push_back(plan);
+        continue; // no data to append
+      }
+
+      int mapped_cluster_id = stripe->blocks[stripe->group_to_blocks[i][0]]->map2cluster;
+
+      plan.set_key(m_toolbox->gen_append_key(stripe->stripe_id, i));
+      plan.set_stripe_id(stripe->stripe_id);
+      plan.set_is_merge_parity(false);
+      plan.set_cluster_id(mapped_cluster_id);
+      plan.set_append_mode("UNILRC_MODE");
+      plan.set_is_serialized(false);
+      plan.set_append_size(append_size);
+
+      add_plans.push_back(plan);
+    }
+
+    return add_plans;
+  }
+
   void CoordinatorImpl::print_stripe_data_placement(Stripe &stripe)
   {
     std::cout << "Stripe " << stripe.stripe_id << " data placement: " << std::endl;
@@ -756,6 +802,72 @@ namespace ECProject
     return grpc::Status::OK;
   }
 
+  grpc::Status CoordinatorImpl::uploadSubsetValue(
+      grpc::ServerContext *context,
+      const coordinator_proto::RequestProxyIPPort *keyValueSize,
+      coordinator_proto::ReplyProxyIPsPorts *proxyIPPort)
+  {
+    std::string clientID = keyValueSize->key();
+    size_t setSizeBytes = keyValueSize->valuesizebytes();
+    std::string code_type = m_sys_config->CodeType;
+    assert(setSizeBytes <= static_cast<size_t>(m_sys_config->BlockSize) * static_cast<size_t>(m_sys_config->k) && "subset size is larger than the block size!");
+    assert((code_type == "UniLRC" || code_type == "AzureLRC" || code_type == "OptimalLRC" || code_type == "UniformLRC") && "Error: code type must be UniLRC, AzureLRC, OptimalLRC, or UniformLRC!");
+
+    Stripe t_stripe;
+    t_stripe.stripe_id = m_cur_stripe_id++;
+    t_stripe.n = m_sys_config->n;
+    t_stripe.k = m_sys_config->k;
+    t_stripe.r = m_sys_config->r;
+    t_stripe.z = m_sys_config->z;
+    t_stripe.object_keys.push_back(clientID);
+    if (code_type == "UniLRC" || code_type == "AzureLRC")
+    {
+      initialize_unilrc_and_azurelrc_stripe_placement(&t_stripe);
+    }
+    else if (code_type == "OptimalLRC")
+    {
+      initialize_optimal_lrc_stripe_placement(&t_stripe);
+    }
+    else if (code_type == "UniformLRC")
+    {
+      initialize_uniform_lrc_stripe_placement(&t_stripe);
+    }
+
+    print_stripe_data_placement(t_stripe);
+
+    std::vector<proxy_proto::AppendStripeDataPlacement> add_plans = generate_sub_add_plans(&t_stripe, setSizeBytes);
+
+    for (const auto &plan : add_plans)
+    {
+      m_mutex.lock();
+      m_object_commit_table.erase(plan.key());
+      m_mutex.unlock();
+    }
+
+    std::vector<std::thread> threads;
+    size_t sum_append_size = 0;
+    for (const auto &plan : add_plans)
+    {
+      threads.push_back(std::thread(&CoordinatorImpl::notify_proxies_ready, this, plan));
+      proxyIPPort->add_append_keys(plan.key());
+      proxyIPPort->add_proxyips(m_cluster_table[plan.cluster_id()].proxy_ip);
+      proxyIPPort->add_proxyports(m_cluster_table[plan.cluster_id()].proxy_port + ECProject::PROXY_PORT_SHIFT); // use another port to accept data
+      proxyIPPort->add_cluster_slice_sizes(plan.append_size());
+      //proxyIPPort->add_group_ids(group_id);
+      sum_append_size += plan.append_size();
+      //group_id++;
+    }
+    for (auto &thread : threads)
+    {
+      thread.join();
+    }
+    proxyIPPort->set_sum_append_size(sum_append_size);
+
+    m_stripe_table[t_stripe.stripe_id] = std::move(t_stripe);
+
+    return grpc::Status::OK;
+  }
+  
   std::vector<int> CoordinatorImpl::get_recovery_group_ids(std::string code_type, int k, int r, int z, int failed_block_id)
   {
     std::vector<int> recovery_group_ids;

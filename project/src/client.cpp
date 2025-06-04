@@ -676,6 +676,95 @@ namespace ECProject
     return false;
   }
 
+  bool Client::sub_set(int block_num)
+  {
+    grpc::ClientContext get_proxy_ip_port;
+    coordinator_proto::RequestProxyIPPort request;
+    coordinator_proto::ReplyProxyIPsPorts reply;
+    request.set_key(m_clientID);
+    request.set_valuesizebytes(static_cast<size_t>(m_sys_config->BlockSize) *static_cast<size_t>(block_num));
+    request.set_append_mode("UNILRC_MODE");
+    grpc::Status status = m_coordinator_ptr->uploadSubsetValue(&get_proxy_ip_port, request, &reply);
+
+    if (!status.ok())
+    {
+      std::cout << "[SET402] upload data failed!" << std::endl;
+      return false;
+    }
+    else
+    {
+      std::vector<std::thread> threads;
+      std::vector<char *> cluster_slice_data = m_toolbox->splitCharPointer(m_pre_allocated_buffer, &reply);
+      std::unique_ptr<bool[]> if_commit_arr(new bool[reply.append_keys_size()]);
+      std::fill_n(if_commit_arr.get(), reply.append_keys_size(), false);
+
+      assert(m_sys_config->CodeType == "UniLRC" || m_sys_config->CodeType == "OptimalLRC" || m_sys_config->CodeType == "UniformLRC" || m_sys_config->CodeType == "AzureLRC");
+      std::vector<int> data_block_num_per_group = get_data_block_num_per_group(m_sys_config->k, m_sys_config->r, m_sys_config->z, m_sys_config->CodeType);
+      int capacity = block_num;
+      for(int i = 0; i < data_block_num_per_group.size(); i++)
+      {
+        if(data_block_num_per_group[i] > capacity){
+          data_block_num_per_group[i] = capacity;
+        } 
+        capacity -= data_block_num_per_group[i];
+      }
+      std::vector<int> global_parity_block_num_per_group = get_global_parity_block_num_per_group(m_sys_config->k, m_sys_config->r, m_sys_config->z, m_sys_config->CodeType);
+      std::vector<int> local_parity_block_num_per_group = get_local_parity_block_num_per_group(m_sys_config->k, m_sys_config->r, m_sys_config->z, m_sys_config->CodeType);
+      m_toolbox->remove_common_zeros(data_block_num_per_group, global_parity_block_num_per_group, local_parity_block_num_per_group);
+
+      std::vector<char *> data_ptr_array, global_parity_ptr_array, local_parity_ptr_array;
+      split_for_set_data_and_parity(&reply, cluster_slice_data, data_block_num_per_group, global_parity_block_num_per_group, local_parity_block_num_per_group, data_ptr_array, global_parity_ptr_array, local_parity_ptr_array);
+      std::vector<char *> parity_ptr_array;
+      parity_ptr_array.insert(parity_ptr_array.end(), global_parity_ptr_array.begin(), global_parity_ptr_array.end());
+      parity_ptr_array.insert(parity_ptr_array.end(), local_parity_ptr_array.begin(), local_parity_ptr_array.end());
+      if (m_sys_config->CodeType == "UniLRC")
+      {
+        //ECProject::encode_unilrc(m_sys_config->k, m_sys_config->r, m_sys_config->z, reinterpret_cast<unsigned char **>(data_ptr_array.data()), reinterpret_cast<unsigned char **>(global_parity_ptr_array.data()), reinterpret_cast<unsigned char **>(local_parity_ptr_array.data()), m_sys_config->BlockSize);
+        ECProject::partial_encode_unilrc(m_sys_config->k, m_sys_config->r, m_sys_config->z, block_num, reinterpret_cast<unsigned char **>(data_ptr_array.data()), reinterpret_cast<unsigned char **>(parity_ptr_array.data()), m_sys_config->BlockSize);
+      }
+      else if (m_sys_config->CodeType == "OptimalLRC")
+      {
+        //ECProject::encode_optimal_lrc(m_sys_config->k, m_sys_config->r, m_sys_config->z, reinterpret_cast<unsigned char **>(data_ptr_array.data()), reinterpret_cast<unsigned char **>(global_parity_ptr_array.data()), reinterpret_cast<unsigned char **>(local_parity_ptr_array.data()), m_sys_config->BlockSize);
+        ECProject::partial_encode_optimal_lrc(m_sys_config->k, m_sys_config->r, m_sys_config->z, block_num, reinterpret_cast<unsigned char **>(data_ptr_array.data()), reinterpret_cast<unsigned char **>(parity_ptr_array.data()), m_sys_config->BlockSize);
+      }
+      else if (m_sys_config->CodeType == "UniformLRC")
+      {
+        //ECProject::encode_uniform_lrc(m_sys_config->k, m_sys_config->r, m_sys_config->z, reinterpret_cast<unsigned char **>(data_ptr_array.data()), reinterpret_cast<unsigned char **>(global_parity_ptr_array.data()), reinterpret_cast<unsigned char **>(local_parity_ptr_array.data()), m_sys_config->BlockSize);
+        ECProject::partial_encode_uniform_lrc(m_sys_config->k, m_sys_config->r, m_sys_config->z, block_num, reinterpret_cast<unsigned char **>(data_ptr_array.data()), reinterpret_cast<unsigned char **>(parity_ptr_array.data()), m_sys_config->BlockSize);
+      }
+      else if (m_sys_config->CodeType == "AzureLRC")
+      {
+        //ECProject::encode_azure_lrc(m_sys_config->k, m_sys_config->r, m_sys_config->z, reinterpret_cast<unsigned char **>(data_ptr_array.data()), reinterpret_cast<unsigned char **>(global_parity_ptr_array.data()), reinterpret_cast<unsigned char **>(local_parity_ptr_array.data()), m_sys_config->BlockSize);
+        ECProject::partial_encode_azure_lrc(m_sys_config->k, m_sys_config->r, m_sys_config->z, block_num, reinterpret_cast<unsigned char **>(data_ptr_array.data()), reinterpret_cast<unsigned char **>(parity_ptr_array.data()), m_sys_config->BlockSize);
+      }
+      for (int i = 0; i < reply.append_keys_size(); i++)
+      {
+        threads.push_back(std::thread(&Client::async_append_to_proxies,
+                                      this, cluster_slice_data[i], reply.append_keys(i), reply.cluster_slice_sizes(i), reply.proxyips(i), reply.proxyports(i), i, if_commit_arr.get()));
+      }
+      for (auto &thread : threads)
+      {
+        thread.join();
+      }
+
+      // check if all appends are successful
+      bool all_true = std::all_of(if_commit_arr.get(), if_commit_arr.get() + reply.append_keys_size(), [](bool val)
+                                  { return val == true; });
+
+      if (all_true)
+      {
+        return true;
+      }
+      else
+      {
+        std::cout << "[SET441] Client " << m_clientID << " set failed!" << std::endl;
+        return false;
+      }
+    }
+
+    return false;
+  }
+
   std::shared_ptr<char[]> Client::get_degraded_read_block_breakdown(int stripe_id, int failed_block_id, double &total_time,double &disk_io_time, double &network_time, double &decode_time)
   {
     std::chrono::high_resolution_clock::time_point start = std::chrono::high_resolution_clock::now();

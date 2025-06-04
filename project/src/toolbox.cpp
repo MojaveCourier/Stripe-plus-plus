@@ -145,4 +145,30 @@ namespace ECProject
     } while (keys.count(key) > 0);
     return key;
   }
+
+  void ToolBox::remove_common_zeros(std::vector<int>& vec1, std::vector<int>& vec2, std::vector<int>& vec3) {
+    // 检查三个vector大小是否相同
+    if (vec1.size() != vec2.size() || vec2.size() != vec3.size()) {
+        std::cerr << "错误：三个vector大小不同！" << std::endl;
+        return;
+    }
+    
+    // 存储需要删除的索引
+    std::vector<size_t> indices_to_remove;
+    
+    // 遍历所有索引，找出所有三个元素都为0的位置
+    for (size_t i = 0; i < vec1.size(); ++i) {
+        if (vec1[i] == 0 && vec2[i] == 0 && vec3[i] == 0) {
+            indices_to_remove.push_back(i);
+        }
+    }
+    
+    // 从后往前删除元素（避免索引变化问题）
+    std::sort(indices_to_remove.rbegin(), indices_to_remove.rend());
+    for (size_t index : indices_to_remove) {
+        vec1.erase(vec1.begin() + index);
+        vec2.erase(vec2.begin() + index);
+        vec3.erase(vec3.begin() + index);
+    }
+}
 } // namespace ECProject
