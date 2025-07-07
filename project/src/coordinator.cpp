@@ -233,7 +233,7 @@ namespace ECProject
     // choose a cluster: round robin
     int t_cluster_id = stripe->stripe_id % m_sys_config->ClusterNum;
 
-    int group_size = stripe->r;
+    int group_size = stripe->r + 1;
     int local_group_size = int((stripe->k + stripe->r) / stripe->z);
     int larger_local_group_num = int((stripe->k + stripe->r) % stripe->z);
     int group_num = -1;
@@ -1061,10 +1061,10 @@ namespace ECProject
     }
     else if (code_type == "UniformLRC")
     {
-      int group_size = r;
+      /*int group_size = r + 1;
       int local_group_size = int((k + r) / z);
       int larger_local_group_num = int((k + r) % z);
-      int group_num = -1;
+
       int group_num_of_one_local_group = local_group_size / group_size + (bool)(local_group_size % group_size);
       for (int i = 0; i < z - 1; i++)
       {
@@ -1075,7 +1075,7 @@ namespace ECProject
         }
         for (int j = 0; j < group_num_of_one_local_group; j++)
         {
-          if (j > 0 && j == group_num_of_one_local_group - 1)
+          if (j == group_num_of_one_local_group - 1)
           {
             data_block_num_per_group.push_back(local_group_size % group_size);
           }
@@ -1086,6 +1086,14 @@ namespace ECProject
         }
       }
       data_block_num_per_group.push_back(local_group_size - r);
+      for(int i = 0; i < group_num_of_one_local_group -1; i++)
+      {
+        data_block_num_per_group.push_back(0);
+      }*/
+
+      for(int i = 0; i < z -1; i++){
+        data_block_num_per_group.push_back((k+r) / z);
+      }
       data_block_num_per_group.push_back(0);
     }
     else if (code_type == "UniLRC")

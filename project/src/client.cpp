@@ -421,10 +421,10 @@ namespace ECProject
     }
     else if (code_type == "UniformLRC")
     {
-      int group_size = r;
+      /*int group_size = r + 1;
       int local_group_size = int((k + r) / z);
       int larger_local_group_num = int((k + r) % z);
-      int group_num = -1;
+
       int group_num_of_one_local_group = local_group_size / group_size + (bool)(local_group_size % group_size);
       for (int i = 0; i < z - 1; i++)
       {
@@ -435,7 +435,7 @@ namespace ECProject
         }
         for (int j = 0; j < group_num_of_one_local_group; j++)
         {
-          if (j > 0 && j == group_num_of_one_local_group - 1)
+          if (j == group_num_of_one_local_group - 1)
           {
             data_block_num_per_group.push_back(local_group_size % group_size);
           }
@@ -446,6 +446,13 @@ namespace ECProject
         }
       }
       data_block_num_per_group.push_back(local_group_size - r);
+      for(int i = 0; i < group_num_of_one_local_group -1; i++)
+      {
+        data_block_num_per_group.push_back(0);
+      }*/
+      for(int i = 0; i < z -1; i++){
+        data_block_num_per_group.push_back((k+r) / z);
+      }
       data_block_num_per_group.push_back(0);
     }
     else if (code_type == "UniLRC")
@@ -484,10 +491,9 @@ namespace ECProject
     }
     else if (code_type == "UniformLRC")
     {
-      int group_size = r;
+      /*int group_size = r + 1;
       int local_group_size = int((k + r) / z);
       int larger_local_group_num = int((k + r) % z);
-      int group_num = -1;
       int group_num_of_one_local_group = local_group_size / group_size + (bool)(local_group_size % group_size);
       for (int i = 0; i < z - 1; i++)
       {
@@ -501,8 +507,11 @@ namespace ECProject
           global_pairty_block_num_per_group.push_back(0);
         }
       }
-      global_pairty_block_num_per_group.push_back(group_size - local_group_size % group_size);
-      global_pairty_block_num_per_group.push_back(local_group_size % group_size);
+      global_pairty_block_num_per_group.push_back(r);*/
+      for(int i = 0; i < z - 1; i++){
+        global_pairty_block_num_per_group.push_back(0);
+      }
+      global_pairty_block_num_per_group.push_back(r);
     }
     else if (code_type == "UniLRC")
     {
@@ -547,10 +556,9 @@ namespace ECProject
     }
     else if (code_type == "UniformLRC")
     {
-      int group_size = r;
+      /*int group_size = r + 1;
       int local_group_size = int((k + r) / z);
       int larger_local_group_num = int((k + r) % z);
-      int group_num = -1;
       int group_num_of_one_local_group = local_group_size / group_size + (bool)(local_group_size % group_size);
       for (int i = 0; i < z; i++)
       {
@@ -570,6 +578,10 @@ namespace ECProject
             local_parity_block_num_per_group.push_back(0);
           }
         }
+      }*/
+      for (int i = 0; i < z; i++)
+      {
+        local_parity_block_num_per_group.push_back(1);
       }
     }
     else if (code_type == "UniLRC")
@@ -621,7 +633,6 @@ namespace ECProject
       std::vector<int> data_block_num_per_group = get_data_block_num_per_group(m_sys_config->k, m_sys_config->r, m_sys_config->z, m_sys_config->CodeType);
       std::vector<int> global_parity_block_num_per_group = get_global_parity_block_num_per_group(m_sys_config->k, m_sys_config->r, m_sys_config->z, m_sys_config->CodeType);
       std::vector<int> local_parity_block_num_per_group = get_local_parity_block_num_per_group(m_sys_config->k, m_sys_config->r, m_sys_config->z, m_sys_config->CodeType);
-
       std::vector<char *> data_ptr_array, global_parity_ptr_array, local_parity_ptr_array;
       split_for_set_data_and_parity(&reply, cluster_slice_data, data_block_num_per_group, global_parity_block_num_per_group, local_parity_block_num_per_group, data_ptr_array, global_parity_ptr_array, local_parity_ptr_array);
       std::vector<char *> parity_ptr_array;

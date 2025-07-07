@@ -367,7 +367,11 @@ void ECProject::encode_uniform_lrc(int k, int r, int z, unsigned char **data_ptr
     unsigned char *local_vector = new unsigned char[k];
     gf_gen_local_vector(local_vector, k, r);
     int group_size = (k + r) / z;
-    int larger_group_num = (k + r) % z;
+    for(int i = 0; i < k; i++){
+        int row = i / group_size;
+        encode_matrix[(m + row) * k + i] = local_vector[i];
+    }
+    /*int larger_group_num = (k + r) % z;
     int larger_group_block_start = group_size * (z - larger_group_num);
     for(int i = 0; i < larger_group_block_start; i++){
         int row = i / group_size;
@@ -376,7 +380,7 @@ void ECProject::encode_uniform_lrc(int k, int r, int z, unsigned char **data_ptr
     for(int i = larger_group_block_start; i < k; i++){
         int row = (i - larger_group_block_start) / (group_size + 1) + z - larger_group_num;
         encode_matrix[(m + row) * k + i] = local_vector[i];
-    }
+    }*/
     for(int i = 0; i < r; i++){
         for(int j = 0; j < k; j++){
             encode_matrix[(m + z - 1) * k + j] ^= encode_matrix[(k + i) * k + j];
@@ -404,7 +408,11 @@ void ECProject::partial_encode_uniform_lrc(int k, int r, int z, int data_block_n
     unsigned char *local_vector = new unsigned char[k];
     gf_gen_local_vector(local_vector, k, r);
     int group_size = (k + r) / z;
-    int larger_group_num = (k + r) % z;
+    for(int i = 0; i < k; i++){
+        int row = i / group_size;
+        encode_matrix[(m + row) * k + i] = local_vector[i];
+    }
+    /*int larger_group_num = (k + r) % z;
     int larger_group_block_start = group_size * (z - larger_group_num);
     for(int i = 0; i < larger_group_block_start; i++){
         int row = i / group_size;
@@ -413,7 +421,7 @@ void ECProject::partial_encode_uniform_lrc(int k, int r, int z, int data_block_n
     for(int i = larger_group_block_start; i < k; i++){
         int row = (i - larger_group_block_start) / (group_size + 1) + z - larger_group_num;
         encode_matrix[(m + row) * k + i] = local_vector[i];
-    }
+    }*/
     for(int i = 0; i < r; i++){
         for(int j = 0; j < k; j++){
             encode_matrix[(m + z - 1) * k + j] ^= encode_matrix[(k + i) * k + j];

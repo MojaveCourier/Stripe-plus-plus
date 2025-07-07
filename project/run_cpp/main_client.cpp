@@ -49,34 +49,21 @@ int main(int argc, char **argv)
     }
     double block_size = static_cast<double> (parameters[3]) / 1024 / 1024; //MB
     int n = k + r + z;
+    client.set();
 
-    /*client.set();
-    std::cout << "Single block recovery test" << std::endl;
-    std::vector<std::chrono::duration<double>> block_recovery_time_spans;
-    for(int i = 0; i < n; i++){
-        std::chrono::high_resolution_clock::time_point t1 = std::chrono::high_resolution_clock::now();
-        client.recovery(0, i);
-        std::chrono::high_resolution_clock::time_point t2 = std::chrono::high_resolution_clock::now();
-        std::chrono::duration<double> time_span = std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1);
-        block_recovery_time_spans.push_back(time_span);
-        std::cout << "single block repair time: " << time_span.count() << std::endl;
-    }
-    std::chrono::duration<double> block_recovery_total_time_span = std::accumulate(block_recovery_time_spans.begin(), block_recovery_time_spans.end(), std::chrono::duration<double>(0));
-    std::chrono::duration<double> block_recovery_max_time_span = *std::max_element(block_recovery_time_spans.begin(), block_recovery_time_spans.end());
-    std::chrono::duration<double> block_recovery_min_time_span = *std::min_element(block_recovery_time_spans.begin(), block_recovery_time_spans.end());
-    //std::cout << "Total time: " << total_time_span.count() << std::endl;
-    std::cout << "Average time: " << block_recovery_total_time_span.count() / block_recovery_time_spans.size() << std::endl;*/
-
-    
+    /*
     size_t total_write_size = 40000; //MB
     int stripe_num = total_write_size / (block_size * n);
     std::cout << "Starting set stripe operation" << std::endl;
+    std::chrono::high_resolution_clock::time_point set_start = std::chrono::high_resolution_clock::now();
     for(int i = 0; i < stripe_num; i++){
         client.set();
     }
+    std::chrono::high_resolution_clock::time_point set_end = std::chrono::high_resolution_clock::now();
     std::cout << "Set stripe operation finished" << std::endl;
     std::cout << "Conducting experiments, please wait..." << std::endl;
-
+    std::chrono::duration<double> set_time = std::chrono::duration_cast<std::chrono::duration<double>>(set_end - set_start);
+    std::cout << "write throughput: " << (static_cast<double> (total_write_size) / set_time.count() / 1024) << "MB/s" << std::endl;
     std::string output_file_name = "test_"  + code_type + + "_" + std::to_string(k) + "_" + std::to_string(r) + "_" + std::to_string(z) + ".txt";
     std::ofstream output_file(output_file_name);
     if (!output_file.is_open())
@@ -89,7 +76,8 @@ int main(int argc, char **argv)
 
     std::uniform_int_distribution<int> dist_500(0, k*stripe_num - 500);
     std::uniform_real_distribution<double> dist_double(0.0, 1.0);
-    std::string trace_file_path = std::string(buff) + cwf.substr(1, cwf.rfind('/') - 1) + "/../../../trace/ibm_test_trace.csv";
+    */
+    /*std::string trace_file_path = std::string(buff) + cwf.substr(1, cwf.rfind('/') - 1) + "/../../../trace/ibm_test_trace.csv";
     std::fstream trace_file(trace_file_path);
     std::string trace_line;
     while(std::getline(trace_file, trace_line)){
@@ -113,8 +101,32 @@ int main(int argc, char **argv)
         std::chrono::high_resolution_clock::time_point t2 = std::chrono::high_resolution_clock::now();
         std::chrono::duration<double> time_span = std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1);
         std::cout << operation << " operation time: " << time_span.count() << " seconds" << std::endl;
-    }
-    //client.sub_set(1);
+    }*/
+
+    /*std::string trace_file_path = std::string(buff) + cwf.substr(1, cwf.rfind('/') - 1) + "/../../../trace/ycsb_final.txt";
+    std::fstream trace_file(trace_file_path);
+    std::string trace_line;
+    while(std::getline(trace_file, trace_line)){
+        std::string operation;
+        std::istringstream iss(trace_line);
+        std::getline(iss, operation, ' ');
+        std::chrono::high_resolution_clock::time_point t1 = std::chrono::high_resolution_clock::now();
+        if(operation == "R"){
+            int block_id;
+            iss >> block_id;
+            client.get_blocks(block_id, block_id);
+        }
+        else if(operation == "U"){
+            client.sub_set(1);
+        }
+        else{
+            std::cerr << "Unknown operation: " << operation << std::endl;
+            return -1;
+        }
+        std::chrono::high_resolution_clock::time_point t2 = std::chrono::high_resolution_clock::now();
+        std::chrono::duration<double> time_span = std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1);
+        std::cout << operation << " operation time: " << time_span.count() << " seconds" << std::endl;
+    }*/
 
     /*
     //for read test
@@ -176,7 +188,7 @@ int main(int argc, char **argv)
     std::cout << "Min speed: " << static_cast<size_t>(block_size)  / degraded_read_max_time_span.count() << "MB/s" << std::endl;
     std::cout << "Degraded read test end" << std::endl;
     std::cout << std::endl;
-
+    */
     //for single block recovery
     std::cout << "Single block recovery test start" << std::endl;
     std::vector<std::chrono::duration<double>> block_recovery_time_spans;
@@ -197,7 +209,7 @@ int main(int argc, char **argv)
     std::cout << "Min time: "<< block_recovery_min_time_span.count() << std::endl;
     std::cout << "Single block recovery test end" << std::endl;
     std::cout << std::endl;
-   
+    /*
     //for full node repair
     std::cout << "Full node repair test start" << std::endl;
     int node_num = 5;
@@ -237,85 +249,6 @@ int main(int argc, char **argv)
     std::cout << "Average decode time: " << std::endl;
     std::cout << std::accumulate(decode_time_spans.begin(), decode_time_spans.end(), 0.0) / decode_time_spans.size() << std::endl;
     std::cout << "Decode test end" << std::endl;
-    std::cout << std::endl;
-    //for workload read test
-    std::cout << "Workload read test start" << std::endl;
-
-    int workload = 1000;
-
-
-    std::mt19937 rng(std::random_device{}());
-
-    std::uniform_int_distribution<int> dist_64(0, k*stripe_num - 64);
-    std::uniform_int_distribution<int> dist_32(0, k*stripe_num - 32);
-    std::uniform_int_distribution<int> dist_1(0, k*stripe_num - 1);
-    std::uniform_real_distribution<double> dist_double(0.0, 1.0);
-
-    for(int i = 0; i < workload; i++){
-        double random_double = dist_double(rng);
-        std::shared_ptr<char[]> value;
-        std::chrono::high_resolution_clock::time_point work_load_start = std::chrono::high_resolution_clock::now();
-        if(random_double < 0.825){
-            int start_block_id = dist_64(rng);
-            int end_block_id = start_block_id + 64 - 1;
-            value = client.get_blocks(start_block_id, end_block_id);
-        }
-        else if(random_double < 0.925){
-            int start_block_id = dist_32(rng);
-            int end_block_id = start_block_id + 32 - 1;
-            value = client.get_blocks(start_block_id, end_block_id);
-        }
-        else{
-            int block_id = dist_1(rng);
-            value = client.get_blocks(block_id, block_id);
-        }
-        std::chrono::high_resolution_clock::time_point work_load_end = std::chrono::high_resolution_clock::now();
-        std::chrono::duration<double> work_load_time = std::chrono::duration_cast<std::chrono::duration<double>>(work_load_end - work_load_start);
-        if(!value){
-            std::cout << "Workload get operation failed" << std::endl;
-            continue;
-        }
-        std::cout << "Wokload normal read read time: " << work_load_time.count() << std::endl;
-    }
-    std::cout << "Workload read test end" << std::endl;
-    std::cout << std::endl;
-
-    //for workload degraded read test
-    std::cout << "Workload degraded read start" << std::endl;
-
-    for(int i = 0; i < workload; i++){
-        double random_double = dist_double(rng);
-        std::shared_ptr<char[]> value;
-        std::chrono::high_resolution_clock::time_point work_load_start = std::chrono::high_resolution_clock::now();
-        if(random_double < 0.825){
-            int start_block_id = dist_64(rng);
-            int end_block_id = start_block_id + 64 - 1;
-            value = client.get_degraded_read_blocks(start_block_id, end_block_id);
-        }
-        else if(random_double < 0.925){
-            int start_block_id = dist_32(rng);
-            int end_block_id = start_block_id + 32 - 1;
-            value = client.get_degraded_read_blocks(start_block_id, end_block_id);
-        }
-        else{
-            int block_id = dist_1(rng);
-            value = client.get_degraded_read_blocks(block_id, block_id);
-        }
-        std::chrono::high_resolution_clock::time_point work_load_end = std::chrono::high_resolution_clock::now();
-        std::chrono::duration<double> work_load_time = std::chrono::duration_cast<std::chrono::duration<double>>(work_load_end - work_load_start);
-        if(!value){
-            std::cout << "Workload degraded read operation failed" << std::endl;
-            continue;
-        }
-        std::cout << "Workload degraded read time: " << work_load_time.count() << std::endl;
-    }
-    std::cout << "Workload degraded read test end" << std::endl;
-    output_file.close();
-    if (freopen("/dev/tty", "w", stdout) == NULL) {
-        std::cerr << "Error redirecting stdout back to console!" << std::endl;
-    }
-    std::cout << "All tests finished" << std::endl;
-    std::cout << "Output file: " << output_file_name << std::endl;
-    */
+    std::cout << std::endl;*/
     return 0;
 }

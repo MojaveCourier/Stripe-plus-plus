@@ -4,7 +4,7 @@ HOSTS_FILE="proxy_hosts"
 
 USER="root"
 
-REMOTE_COMMAND="cd /users/qiliang/UniLRC && sh limit_500Mb.sh"
+REMOTE_COMMAND="cd /users/qiliang/UniLRC && sh limit_0.5Gb.sh"
 
 PARALLEL=5
 

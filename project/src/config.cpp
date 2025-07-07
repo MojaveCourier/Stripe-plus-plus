@@ -38,7 +38,7 @@ namespace ECProject
     if (CodeType == "UniformLRC")
     {
       assert(DatanodeNumPerCluster > r && "Error: DatanodeNumPerCluster must be greater than r");
-      assert(ClusterNum > ((((k + r) / z + 1) / r + (bool)(((k + r) / z + 1) % r)) * ((k + r) % z)) + (((k + r) / z) / r + (bool)(((k + r) / z) % r)) * (z - ((k + r) % z)) && "Error: ClusterNum must be greater than ((((k + r) / z + 1) / r + (bool)(((k + r) / z + 1) % r)) * ((k + r) % z)) + (((k + r) / z) / r + (bool)(((k + r) / z) % r)) * (z - ((k + r) % z))");
+      assert(ClusterNum > ((((k + r) / z + 1) / (r + 1) + (bool)(((k + r) / z + 1) % (r + 1))) * ((k + r) % z)) + (((k + r) / z) / (r + 1) + (bool)(((k + r) / z) % (r + 1))) * (z - ((k + r) % z)) && "Error: ClusterNum must be greater than ((((k + r) / z + 1) / (r + 1) + (bool)(((k + r) / z + 1) % (r + 1))) * ((k + r) % z)) + (((k + r) / z) / (r + 1) + (bool)(((k + r) / z) % (r + 1))) * (z - ((k + r) % z))");
     }
   }
 
