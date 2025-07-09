@@ -810,7 +810,7 @@ namespace ECProject
     std::string clientID = keyValueSize->key();
     size_t setSizeBytes = keyValueSize->valuesizebytes();
     std::string code_type = m_sys_config->CodeType;
-    assert(setSizeBytes <= static_cast<size_t>(m_sys_config->BlockSize) * static_cast<size_t>(m_sys_config->k) && "subset size is larger than the block size!");
+    assert(setSizeBytes <= static_cast<size_t>(m_sys_config->BlockSize) * static_cast<size_t>(m_sys_config->k) && "subset size is larger than the stripe size!");
     assert((code_type == "UniLRC" || code_type == "AzureLRC" || code_type == "OptimalLRC" || code_type == "UniformLRC") && "Error: code type must be UniLRC, AzureLRC, OptimalLRC, or UniformLRC!");
 
     Stripe t_stripe;
