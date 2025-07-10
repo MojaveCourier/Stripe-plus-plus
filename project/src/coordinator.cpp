@@ -233,28 +233,17 @@ namespace ECProject
     // choose a cluster: round robin
     int t_cluster_id = stripe->stripe_id % m_sys_config->ClusterNum;
 
-    int group_size = stripe->r + 1;
-    int local_group_size = int((stripe->k + stripe->r) / stripe->z);
-    int larger_local_group_num = int((stripe->k + stripe->r) % stripe->z);
-    int group_num = -1;
-    int block_num = 0;
+    std::vector<std::vector<int>> local_group = ECProject::get_uniform_lrc_local_group(stripe->k, stripe->r, stripe->z);
+    std::vector<std::vector<int>> cluster = ECProject::ECWide(stripe->k, stripe->r, stripe->z, local_group);
 
-    for (int i = 0; i < stripe->z; i++)
+    for(int i = 0; i < cluster.size(); i++)
     {
-      if (i + larger_local_group_num == stripe->z)
+      for(int j = 0; j < cluster[i].size(); j++)
       {
-        local_group_size++;
+        blocks_info[cluster[i][j]].map2group = i;
       }
-      for (int j = 0; j < local_group_size; j++)
-      {
-        if (j % group_size == 0)
-        {
-          group_num++;
-        }
-        blocks_info[block_num++].map2group = group_num;
-      }
-      blocks_info[stripe->k + stripe->r + i].map2group = group_num;
     }
+
     for (int i = 0; i < stripe->n; i++)
     {
       blocks_info[i].block_size = m_sys_config->BlockSize;

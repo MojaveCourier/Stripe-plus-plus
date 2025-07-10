@@ -906,3 +906,41 @@ ECProject::gf_mul_vect_matrix(unsigned char* vect, unsigned char* matrix, unsign
         }
     }
 }
+
+
+std::vector<std::vector<int>> 
+ECProject::ECWide(int k, int r, int z, std::vector<std::vector<int>> local_group)
+  {
+    int cluster_capacity = r + 1;
+    std::vector<std::vector<int>> clusters;
+    for(int i = 0; i < local_group.size(); i++){
+      int cluster_num = local_group[i].size() / cluster_capacity + (local_group[i].size() % cluster_capacity != 0);
+      std::vector<std::vector<int>> cur_clusters(cluster_num);
+      std::vector<int> parity_block;
+      for(int j = 0; j < local_group[i].size(); j++){
+        if(local_group[i][j] >= k){
+          parity_block.push_back(local_group[i][j]);
+        }
+      }
+      parity_block.push_back(k + r + i);
+      for(int j = 0; j < parity_block.size(); j++){
+        cur_clusters[j].push_back(parity_block[j]); // multiple parities in one cluster condition not considered yet
+      }
+      for(int j = 0; j < cluster_num; j++){
+        while(cur_clusters[j].size() < cluster_capacity){
+          if(local_group[i].empty()){
+            break;
+          }
+          int block_id = local_group[i].back();
+          local_group[i].pop_back();
+          if(block_id < k){
+            cur_clusters[j].push_back(block_id);
+          }
+        }
+      }
+      for(int j = 0; j < cluster_num; j++){
+        clusters.push_back(cur_clusters[j]);
+      }
+    }
+    return clusters;
+  }
