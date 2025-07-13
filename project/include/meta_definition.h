@@ -83,6 +83,14 @@ namespace ECProject
     std::map<int, std::vector<int>> group_to_blocks;
   } Stripe;
 
+  typedef struct Object
+  {
+    std::string object_key;
+    size_t object_size; // in block number
+    int stripe_id; // the stripe id that this object belongs to
+    std::vector<int> object_blocks; // block_id
+  } Object;
+
   typedef struct ObjectInfo
   {
     int object_size;

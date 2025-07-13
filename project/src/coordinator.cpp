@@ -84,6 +84,46 @@ namespace ECProject
     return grpc::Status::OK;
   }
 
+  void CoordinatorImpl::initialize_data_placement()
+  {
+    const int k = m_sys_config->k;
+    const int r = m_sys_config->r;
+    const int z = m_sys_config->z;
+    std::string code_type = m_sys_config->CodeType;
+    if (code_type == "UniformLRC"){
+      m_local_groups = ECProject::get_uniform_lrc_local_group(k, r, z);
+      m_clusters = ECProject::ECWide(k, r, z, m_local_groups);
+    }
+    else if(code_type == "shuffledUniformLRC"){
+      m_local_groups = ECProject::get_shuffled_uniform_lrc_local_group(k, r, z);
+      m_clusters = ECProject::ECWide(k, r, z, m_local_groups);
+    }
+    else{
+      std::cout << "Unsupported coding scheme: " << code_type << std::endl;
+      throw std::runtime_error("Unsupported coding scheme: " + code_type);
+    }
+  }
+
+  grpc::Status CoordinatorImpl::uploadObjectValue(
+      grpc::ServerContext *context,
+      const coordinator_proto::RequestProxyIPPort *keyValueSize,
+      coordinator_proto::ReplyProxyIPsPorts *proxyIPPort)
+  {
+    std::string objectID = keyValueSize->key();
+    size_t objectSize = keyValueSize->valuesizebytes();
+    int block_num = objectSize / m_sys_config->BlockSize;
+    if(m_cur_stripe_capacity < 0)
+    {
+      Stripe t_stripe;
+      t_stripe.stripe_id = m_cur_stripe_id++;
+      t_stripe.k = m_sys_config->k;
+      t_stripe.r = m_sys_config->r;
+      t_stripe.z = m_sys_config->z;
+      t_stripe.object_keys.push_back(objectID);
+      // Add the first stripe
+    }
+    // Implementation for uploading object value
+  }
   grpc::Status CoordinatorImpl::uploadOriginKeyValue(
       grpc::ServerContext *context,
       const coordinator_proto::RequestProxyIPPort *keyValueSize,
@@ -356,6 +396,66 @@ namespace ECProject
     }
 
     stripe->num_groups = stripe->group_to_blocks.size();
+  }
+
+  std::vector<int> CoordinatorImpl::place_object_ordered(const int object_size, std::vector<int> &cur_cluster_capacity) {
+    std::vector<int> placement(cur_cluster_capacity.size(), 0);
+    int remaining_size = object_size;
+    while(remaining_size > 0) {
+        for (size_t i = 0; i < cur_cluster_capacity.size(); ++i) {
+            if (cur_cluster_capacity[i]) {
+                int place_size = std::min(cur_cluster_capacity[i], remaining_size);
+                remaining_size -= place_size;
+                placement[i] += place_size;
+                cur_cluster_capacity[i] -= place_size;
+                if (remaining_size <= 0) {
+                    break;
+                }
+            }
+        }
+    }
+    return placement;
+  }
+
+  std::vector<int> place_object_greedily(const int object_size, std::vector<int> &cur_cluster_capacity) {
+    int M = cur_cluster_capacity.size();
+    std::vector<int> placement(M, 0); // Record how many blocks are placed in each cluster
+    
+    // Greedily place blocks in clusters with the most remaining capacity
+    for(int block = 0; block < object_size; ++block) {
+        int best_cluster_idx = -1;
+        int max_capacity = -1;
+        
+        // Find the cluster with the maximum remaining capacity
+        for (int j = 0; j < M; ++j) {
+            if (placement[j] == 0 && cur_cluster_capacity[j] > max_capacity) {
+                max_capacity = cur_cluster_capacity[j];
+                best_cluster_idx = j;
+            }
+        }
+        
+        // If no cluster has remaining capacity, we can try to place in any cluster
+        if (best_cluster_idx == -1) {
+            max_capacity = -1;
+            for (int j = 0; j < M; ++j) {
+                if (cur_cluster_capacity[j] > max_capacity) {
+                    max_capacity = cur_cluster_capacity[j];
+                    best_cluster_idx = j;
+                }
+            }
+        }
+        
+        // Place the block in the best cluster found
+        if (best_cluster_idx != -1 && cur_cluster_capacity[best_cluster_idx] > 0) {
+            placement[best_cluster_idx]++;
+            cur_cluster_capacity[best_cluster_idx]--;
+        } else {
+            // If no cluster can accommodate the block, we stop placing
+            break;
+        }
+    }
+    
+    return placement;
   }
 
   void CoordinatorImpl::add_to_map(std::map<int, std::vector<int>> &map, int key, int value)

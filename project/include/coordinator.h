@@ -56,6 +56,10 @@ namespace ECProject
         grpc::ServerContext *context,
         const coordinator_proto::RequestProxyIPPort *keyValueSize,
         coordinator_proto::ReplyProxyIPsPorts *proxyIPPort) override;
+    grpc::Status uploadObjectValue(
+        grpc::ServerContext *context,
+        const coordinator_proto::RequestProxyIPPort *keyValueSize,
+        coordinator_proto::ReplyProxyIPsPorts *proxyIPPort) override;
     grpc::Status uploadSubsetValue(
         grpc::ServerContext *context,
         const coordinator_proto::RequestProxyIPPort *keyValueSize,
@@ -138,6 +142,9 @@ namespace ECProject
     void initialize_unilrc_and_azurelrc_stripe_placement(Stripe *stripe);
     void initialize_optimal_lrc_stripe_placement(Stripe *stripe);
     void initialize_uniform_lrc_stripe_placement(Stripe *stripe);
+    std::vector<int> place_object_ordered(const int object_size, std::vector<int> &cur_cluster_capacity);
+    std::vector<int> place_object_greedily(const int object_size, std::vector<int> &cur_cluster_capacity);
+    void initialize_data_placement();
     void add_to_map(std::map<int, std::vector<int>> &map, int key, int value);
     std::vector<proxy_proto::AppendStripeDataPlacement> generate_add_plans(Stripe *stripe);
     std::vector<proxy_proto::AppendStripeDataPlacement> generate_sub_add_plans(Stripe *stripe, size_t subset_size);
@@ -172,6 +179,11 @@ namespace ECProject
     std::map<int, Cluster> m_cluster_table;
     std::map<int, Node> m_node_table;
     std::map<int, Stripe> m_stripe_table;
+    std::map<std::string, Object> m_object_table;
+    std::vector<int> m_stripe_group_capacities;
+    std::vector<std::vector<int>> m_local_groups;
+    std::vector<std::vector<int>> m_clusters;
+    int m_cur_stripe_capacity; // block num
     std::map<std::string, StripeOffset> m_cur_offset_table;
     std::map<int, std::vector<int>> m_recovery_group_lookup_table;
     
@@ -232,6 +244,8 @@ namespace ECProject
       }
       m_coordinatorImpl.m_stripe_table.clear();
       m_coordinatorImpl.m_cur_offset_table.clear();
+      m_coordinatorImpl.m_stripe_group_capacities.clear();
+      m_coordinatorImpl.m_cur_stripe_capacity = -1;
     };
     // Coordinator
     void Run()

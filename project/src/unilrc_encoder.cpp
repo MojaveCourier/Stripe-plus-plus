@@ -420,7 +420,7 @@ void ECProject::encode_uniform_lrc(int k, int r, int z, unsigned char **data_ptr
             }
             else{
                 for(int l = 0; l < k; l++){
-                    encode_matrix[(m + i) * k + l] ^= encode_matrix[local_group[i][j] * k + l];
+                    encode_matrix[(m + i) * k + l] ^= encode_matrix[local_groups[i][j] * k + l];
                 }
             }
         }
@@ -459,7 +459,7 @@ void ECProject::partial_encode_uniform_lrc(int k, int r, int z, int data_block_n
             }
             else{
                 for(int l = 0; l < k; l++){
-                    encode_matrix[(m + i) * k + l] ^= encode_matrix[local_group[i][j] * k + l];
+                    encode_matrix[(m + i) * k + l] ^= encode_matrix[local_groups[i][j] * k + l];
                 }
             }
         }
@@ -509,7 +509,7 @@ void ECProject::encode_shuffled_uniform_lrc(int k, int r, int z, unsigned char *
             }
             else{
                 for(int l = 0; l < k; l++){
-                    encode_matrix[(m + i) * k + l] ^= encode_matrix[local_group[i][j] * k + l];
+                    encode_matrix[(m + i) * k + l] ^= encode_matrix[local_groups[i][j] * k + l];
                 }
             }
         }
@@ -548,7 +548,7 @@ void ECProject::partial_encode_shuffled_uniform_lrc(int k, int r, int z, int dat
             }
             else{
                 for(int l = 0; l < k; l++){
-                    encode_matrix[(m + i) * k + l] ^= encode_matrix[local_group[i][j] * k + l];
+                    encode_matrix[(m + i) * k + l] ^= encode_matrix[local_groups[i][j] * k + l];
                 }
             }
         }
@@ -908,39 +908,69 @@ ECProject::gf_mul_vect_matrix(unsigned char* vect, unsigned char* matrix, unsign
 }
 
 
-std::vector<std::vector<int>> 
+std::vector<std::vector<int>>
 ECProject::ECWide(int k, int r, int z, std::vector<std::vector<int>> local_group)
-  {
+{
     int cluster_capacity = r + 1;
     std::vector<std::vector<int>> clusters;
+    
     for(int i = 0; i < local_group.size(); i++){
-      int cluster_num = local_group[i].size() / cluster_capacity + (local_group[i].size() % cluster_capacity != 0);
-      std::vector<std::vector<int>> cur_clusters(cluster_num);
-      std::vector<int> parity_block;
-      for(int j = 0; j < local_group[i].size(); j++){
-        if(local_group[i][j] >= k){
-          parity_block.push_back(local_group[i][j]);
+        // 分离数据块和校验块
+        std::vector<int> data_blocks;
+        std::vector<int> parity_blocks;
+        
+        for(int j = 0; j < local_group[i].size(); j++){
+            if(local_group[i][j] >= k){
+                parity_blocks.push_back(local_group[i][j]);
+            } else {
+                data_blocks.push_back(local_group[i][j]);
+            }
         }
-      }
-      parity_block.push_back(k + r + i);
-      for(int j = 0; j < parity_block.size(); j++){
-        cur_clusters[j].push_back(parity_block[j]); // multiple parities in one cluster condition not considered yet
-      }
-      for(int j = 0; j < cluster_num; j++){
-        while(cur_clusters[j].size() < cluster_capacity){
-          if(local_group[i].empty()){
-            break;
-          }
-          int block_id = local_group[i].back();
-          local_group[i].pop_back();
-          if(block_id < k){
-            cur_clusters[j].push_back(block_id);
-          }
+        
+        // 添加额外的校验块
+        parity_blocks.push_back(k + r + i);
+        
+        // 计算需要的cluster数量
+        int total_blocks = data_blocks.size() + parity_blocks.size();
+        int cluster_num = (total_blocks + cluster_capacity - 1) / cluster_capacity; // 向上取整
+        
+        std::vector<std::vector<int>> cur_clusters(cluster_num);
+        
+        // 首先平均分配校验块到各个cluster
+        for(int j = 0; j < parity_blocks.size(); j++){
+            int target_cluster = j % cluster_num; // 轮询分配校验块
+            cur_clusters[target_cluster].push_back(parity_blocks[j]);
         }
-      }
-      for(int j = 0; j < cluster_num; j++){
-        clusters.push_back(cur_clusters[j]);
-      }
+        
+        // 然后分配数据块，优先填充容量较少的cluster
+        int data_idx = 0;
+        while(data_idx < data_blocks.size()){
+            // 找到当前容量最小的cluster
+            int min_size = cluster_capacity + 1;
+            int target_cluster = -1;
+            
+            for(int j = 0; j < cluster_num; j++){
+                if(cur_clusters[j].size() < min_size && cur_clusters[j].size() < cluster_capacity){
+                    min_size = cur_clusters[j].size();
+                    target_cluster = j;
+                }
+            }
+            
+            // 如果找到合适的cluster，添加数据块
+            if(target_cluster != -1){
+                cur_clusters[target_cluster].push_back(data_blocks[data_idx]);
+                data_idx++;
+            } else {
+                // 所有cluster都已满，跳出循环
+                break;
+            }
+        }
+        
+        // 将当前local group的所有cluster添加到总集合中
+        for(int j = 0; j < cluster_num; j++){
+            clusters.push_back(cur_clusters[j]);
+        }
     }
+    
     return clusters;
-  }
+}
