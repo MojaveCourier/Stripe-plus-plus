@@ -103,6 +103,10 @@ namespace ECProject
       CoordinatorPort = std::stoi(elem->GetText());
     if (auto elem = root->FirstChildElement("AppendMode"))
       AppendMode = std::string(elem->GetText());
+    if (auto elem = root->FirstChildElement("CodingMode"))
+      CodingMode = std::string(elem->GetText());
+    if (auto elem = root->FirstChildElement("ObjectPlaceMode"))
+      ObjectPlaceMode = std::string(elem->GetText());
   }
 
   void Config::printConfigs() const

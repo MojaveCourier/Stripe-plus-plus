@@ -84,24 +84,38 @@ namespace ECProject
     return grpc::Status::OK;
   }
 
-  void CoordinatorImpl::initialize_data_placement()
+  void CoordinatorImpl::get_object_cluster_datanode_blockkey(const std::string &object_id, std::vector<int> &cluster_ids, std::vector<std::vector<int>> &datanode_ids, std::vector<std::vector<std::string>> &block_keys)
   {
-    const int k = m_sys_config->k;
-    const int r = m_sys_config->r;
-    const int z = m_sys_config->z;
-    std::string code_type = m_sys_config->CodeType;
-    if (code_type == "UniformLRC"){
-      m_local_groups = ECProject::get_uniform_lrc_local_group(k, r, z);
-      m_clusters = ECProject::ECWide(k, r, z, m_local_groups);
+    auto it = m_object_table.find(object_id);
+    if (it == m_object_table.end())
+    {
+      throw std::runtime_error("Object not found: " + object_id);
     }
-    else if(code_type == "shuffledUniformLRC"){
-      m_local_groups = ECProject::get_shuffled_uniform_lrc_local_group(k, r, z);
-      m_clusters = ECProject::ECWide(k, r, z, m_local_groups);
+    const Object &object = it->second;
+    cluster_ids.clear();
+    datanode_ids.clear();
+    block_keys.clear();
+    int stripe_id = object.stripe_id;
+    auto stripe_it = m_stripe_table.find(stripe_id);
+    if (stripe_it == m_stripe_table.end())
+    {
+      throw std::runtime_error("Stripe not found for object: " + object_id);
     }
-    else{
-      std::cout << "Unsupported coding scheme: " << code_type << std::endl;
-      throw std::runtime_error("Unsupported coding scheme: " + code_type);
+    const Stripe &stripe = stripe_it->second;
+    for (int i = 0; i < object.blocks.size(); i++){
+      int block_id = object.blocks[i];
+      int cluster_id = stripe.blocks[block_id]->map2cluster;
+      if (std::find(cluster_ids.begin(), cluster_ids.end(), cluster_id) == cluster_ids.end())
+      {
+        cluster_ids.push_back(cluster_id);
+        datanode_ids.push_back(std::vector<int>());
+        block_keys.push_back(std::vector<std::string>());
+      }
+      size_t index = std::distance(cluster_ids.begin(), std::find(cluster_ids.begin(), cluster_ids.end(), cluster_id));
+      datanode_ids[index].push_back(stripe.blocks[block_id]->map2node);
+      block_keys[index].push_back(stripe.blocks[block_id]->block_key);
     }
+
   }
 
   grpc::Status CoordinatorImpl::uploadObjectValue(
@@ -111,8 +125,9 @@ namespace ECProject
   {
     std::string objectID = keyValueSize->key();
     size_t objectSize = keyValueSize->valuesizebytes();
+    std::string code_type = m_sys_config->CodeType;
     int block_num = objectSize / m_sys_config->BlockSize;
-    if(m_cur_stripe_capacity < 0)
+    if(m_cur_stripe_capacity < block_num) // Add a new stripe Implementation for Merge
     {
       Stripe t_stripe;
       t_stripe.stripe_id = m_cur_stripe_id++;
@@ -120,9 +135,36 @@ namespace ECProject
       t_stripe.r = m_sys_config->r;
       t_stripe.z = m_sys_config->z;
       t_stripe.object_keys.push_back(objectID);
-      // Add the first stripe
+      if(code_type == "UniformLRC")
+        initialize_uniform_lrc_stripe_placement(&t_stripe);
+      else if(code_type == "shuffledUniformLRC")
+        initialize_shuffled_uniform_lrc_stripe_placement(&t_stripe);
+      else
+        throw std::runtime_error("Unsupported coding scheme: " + code_type);
+      m_stripe_table[t_stripe.stripe_id] = std::move(t_stripe);
     }
-    // Implementation for uploading object value
+    std::vector<int> object_placement = place_object_ordered(block_num, m_stripe_group_capacities); // Implementation for greedy placement
+    Object object;
+    object.object_key = objectID;
+    object.object_size = block_num;
+    for(int i = 0; i < object_placement.size(); i++){
+      int num = 0;
+      for(int j = 0; j < m_clusters[i].size(); j++){
+        if(m_clusters[i][j] < m_sys_config->k && !block_used[m_clusters[i][j]]){
+          num++;
+          block_used[m_clusters[i][j]] = true;
+          object.blocks.push_back(m_clusters[i][j]);
+        }
+        if(num == object_placement[i]){
+          break;
+        }
+      }
+    }
+    m_object_table[objectID] = std::move(object);    
+
+    // Implementation for notify proxy and client for uploading object
+
+    return grpc::Status::OK;
   }
   grpc::Status CoordinatorImpl::uploadOriginKeyValue(
       grpc::ServerContext *context,
@@ -273,14 +315,14 @@ namespace ECProject
     // choose a cluster: round robin
     int t_cluster_id = stripe->stripe_id % m_sys_config->ClusterNum;
 
-    std::vector<std::vector<int>> local_group = ECProject::get_uniform_lrc_local_group(stripe->k, stripe->r, stripe->z);
-    std::vector<std::vector<int>> cluster = ECProject::ECWide(stripe->k, stripe->r, stripe->z, local_group);
+    m_local_groups = ECProject::get_uniform_lrc_local_group(stripe->k, stripe->r, stripe->z);
+    m_clusters = ECProject::ECWide(stripe->k, stripe->r, stripe->z, m_local_groups);
 
-    for(int i = 0; i < cluster.size(); i++)
+    for(int i = 0; i < m_clusters.size(); i++)
     {
-      for(int j = 0; j < cluster[i].size(); j++)
+      for(int j = 0; j < m_clusters[i].size(); j++)
       {
-        blocks_info[cluster[i][j]].map2group = i;
+        blocks_info[m_clusters[i][j]].map2group = i;
       }
     }
 
@@ -326,9 +368,20 @@ namespace ECProject
       stripe->place2clusters.insert(blocks_info[i].map2cluster);
       add_to_map(stripe->group_to_blocks, blocks_info[i].map2group, i);
     }
-
+    block_used.clear();
+    block_used.resize(m_sys_config->k, false);
+    m_stripe_group_capacities = std::vector<int>(m_clusters.size(), 0);
+    for(int i = 0; i < m_clusters.size(); i++)
+    {
+      for(auto block : m_clusters[i]){
+        if(block < m_sys_config->k){
+          m_stripe_group_capacities[i] ++;
+        }
+      }
+    }
     stripe->num_groups = stripe->group_to_blocks.size();
   }
+  // implementation for shuffled uniform LRC
 
   void CoordinatorImpl::initialize_unilrc_and_azurelrc_stripe_placement(Stripe *stripe)
   {

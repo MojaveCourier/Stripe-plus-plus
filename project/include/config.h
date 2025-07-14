@@ -35,6 +35,8 @@ namespace ECProject
     int CoordinatorPort = 55555;
     std::string AppendMode = "UNILRC_MODE";
     std::string CodeType = "UniLRC";
+    std::string CodingMode = "CacheMode"; // CacheMode, ReplicationMode, ElasticMode
+    std::string ObjectPlaceMode = "OrderedPlacement"; // OrderedPlacement, GreedyPlacement
   };
 }
 

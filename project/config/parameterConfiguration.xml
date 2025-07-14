@@ -2,7 +2,7 @@
 <Configuration>
     <AlignedSize>4096</AlignedSize>
     <UnitSize>8192</UnitSize>
-    <BlockSize>1048576</BlockSize>
+    <BlockSize>65536</BlockSize>
     <!--1048576-->
     <!--8388608-->
     <!--67108864-->
@@ -18,6 +18,10 @@
     <k>180</k>
     <r>20</r>
     <z>10</z>
+    <CodingMode>CacheMode</CodingMode>
+    <!--CodingMode: CacheMode, ReplicationMode, ElasticMode-->
+    <ObjectPlaceMode>OrderedPlacement</ObjectPlaceMode>
+    <!-- ObjectPlaceMode: OrderedPlacement, GreedyPlacement -->
     <!-- <CodeType>UniformLRC</CodeType>
     <k>30</k>
     <r>6</r>
