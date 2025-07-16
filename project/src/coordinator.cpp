@@ -118,6 +118,34 @@ namespace ECProject
 
   }
 
+  //Implementation for Rep mode
+  std::vector<proxy_proto::AppendStripeDataPlacement> CoordinatorImpl::generate_object_upload_plan(Object *object){
+    std::vector<proxy_proto::AppendStripeDataPlacement> upload_plan;
+    int stripe_id = object->stripe_id;
+    auto stripe_it = m_stripe_table.find(stripe_id);
+    if (stripe_it == m_stripe_table.end())
+    {
+      throw std::runtime_error("Stripe not found for object: " + object->object_key);
+    }
+    const Stripe &stripe = stripe_it->second;
+    std::vector<int> cluster_ids;
+    std::vector<std::vector<int>> datanode_ids;
+    std::vector<std::vector<std::string>> block_keys;
+    get_object_cluster_datanode_blockkey(object->object_key, cluster_ids, datanode_ids, block_keys);
+    for (size_t i = 0; i < cluster_ids.size(); i++) {
+      proxy_proto::AppendStripeDataPlacement placement;
+      placement.set_cluster_id(cluster_ids[i]);
+      for (size_t j = 0; j < datanode_ids[i].size(); j++) {
+        placement.add_datanodeip(m_node_table[datanode_ids[i][j]].node_ip);
+        placement.add_datanodeport(m_node_table[datanode_ids[i][j]].node_port);
+        placement.add_blockkeys(block_keys[i][j]);
+      }
+      placement.set_stripe_id(stripe_id);
+      upload_plan.push_back(placement);
+    }
+    return upload_plan;
+  }
+
   grpc::Status CoordinatorImpl::uploadObjectValue(
       grpc::ServerContext *context,
       const coordinator_proto::RequestProxyIPPort *keyValueSize,
@@ -154,6 +182,9 @@ namespace ECProject
           num++;
           block_used[m_clusters[i][j]] = true;
           object.blocks.push_back(m_clusters[i][j]);
+        }
+        else if(m_clusters[i][j] >=k){
+          object.blocks.push_back(m_clusters[i][j]); // all global and local parity blocks
         }
         if(num == object_placement[i]){
           break;

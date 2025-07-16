@@ -147,6 +147,7 @@ namespace ECProject
     std::vector<int> place_object_ordered(const int object_size, std::vector<int> &cur_cluster_capacity);
     std::vector<int> place_object_greedily(const int object_size, std::vector<int> &cur_cluster_capacity);
     void add_to_map(std::map<int, std::vector<int>> &map, int key, int value);
+    std::vector<proxy_proto::AppendStripeDataPlacement> generate_object_upload_plan(Object *object);
     std::vector<proxy_proto::AppendStripeDataPlacement> generate_add_plans(Stripe *stripe);
     std::vector<proxy_proto::AppendStripeDataPlacement> generate_sub_add_plans(Stripe *stripe, size_t subset_size);
     std::vector<proxy_proto::AppendStripeDataPlacement> generateAppendPlan(Stripe *stripe, int curr_logical_offset, int append_size);
