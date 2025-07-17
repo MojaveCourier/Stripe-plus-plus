@@ -4,7 +4,7 @@ HOSTS_FILE="hosts"
 
 USER="root"
 
-REMOTE_COMMAND="cd /users/qiliang/UniLRC && sh kill_all.sh"
+REMOTE_COMMAND="cd /users/qiliang/Stripe-plus-plus && sh kill_all.sh"
 
 PARALLEL=5
 
@@ -17,5 +17,5 @@ else
 	echo "Failed to execute command on some nodes."
 fi
 
-cd /users/qiliang/UniLRC
+cd /users/qiliang/Stripe-plus-plus
 sh kill_all.sh

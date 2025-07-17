@@ -4,7 +4,7 @@ HOSTS_FILE="hosts"
 
 USER="root"
 
-REMOTE_COMMAND="cd /users/qiliang/UniLRC && sh unlimit.sh"
+REMOTE_COMMAND="cd /users/qiliang/Stripe-plus-plus && sh unlimit.sh"
 
 PARALLEL=5
 

@@ -6,7 +6,7 @@ USER="root"
 
 INPUT_GB=$1
 
-REMOTE_COMMAND="cd /users/qiliang/UniLRC && sh limit_${INPUT_GB}Gb.sh"
+REMOTE_COMMAND="cd /users/qiliang/Stripe-plus-plus && sh limit_${INPUT_GB}Gb.sh"
 
 PARALLEL=5
 

@@ -17,7 +17,7 @@ namespace ECProject
   {
     assert(BlockSize % UnitSize == 0 && "Error: BlockSize must be divisible by UnitSize");
     assert((AppendMode == "REP_MODE" || AppendMode == "UNILRC_MODE" || AppendMode == "CACHED_MODE") && "Error: AppendMode must be REP_MODE, UNILRC_MODE, or CACHED_MODE");
-    assert((CodeType == "UniLRC" || CodeType == "AzureLRC" || CodeType == "OptimalLRC" || CodeType == "UniformLRC") && "Error: CodeType must be UniLRC, AzureLRC, OptimalLRC, or UniformLRC");
+    assert((CodeType == "UniLRC" || CodeType == "AzureLRC" || CodeType == "OptimalLRC" || CodeType == "UniformLRC" || CodeType == "ShuffledUniformLRC") && "Error: CodeType must be UniLRC, AzureLRC, OptimalLRC, or UniformLRC");
     assert(DatanodeNumPerCluster > 0 && "Error: DatanodeNumPerCluster must be greater than 0");
     assert(ClusterNum > 0 && "Error: ClusterNum must be greater than 0");
     if (CodeType == "UniLRC")
