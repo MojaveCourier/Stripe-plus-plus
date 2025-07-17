@@ -84,7 +84,7 @@ namespace ECProject
     return grpc::Status::OK;
   }
 
-  void CoordinatorImpl::get_object_cluster_datanode_blockkey(const std::string &object_id, std::vector<int> &cluster_ids, std::vector<std::vector<int>> &datanode_ids, std::vector<std::vector<std::string>> &block_keys)
+  void CoordinatorImpl::get_object_cluster_datanode_block(const std::string &object_id, std::vector<int> &cluster_ids, std::vector<std::vector<int>> &datanode_ids, std::vector<std::vector<std::string>> &block_keys, std::vector<std::vector<int>> &block_ids)
   {
     auto it = m_object_table.find(object_id);
     if (it == m_object_table.end())
@@ -95,6 +95,7 @@ namespace ECProject
     cluster_ids.clear();
     datanode_ids.clear();
     block_keys.clear();
+    block_ids.clear();
     int stripe_id = object.stripe_id;
     auto stripe_it = m_stripe_table.find(stripe_id);
     if (stripe_it == m_stripe_table.end())
@@ -114,6 +115,7 @@ namespace ECProject
       size_t index = std::distance(cluster_ids.begin(), std::find(cluster_ids.begin(), cluster_ids.end(), cluster_id));
       datanode_ids[index].push_back(stripe.blocks[block_id]->map2node);
       block_keys[index].push_back(stripe.blocks[block_id]->block_key);
+      block_ids[index].push_back(block_id);
     }
 
   }
@@ -131,14 +133,17 @@ namespace ECProject
     std::vector<int> cluster_ids;
     std::vector<std::vector<int>> datanode_ids;
     std::vector<std::vector<std::string>> block_keys;
-    get_object_cluster_datanode_blockkey(object->object_key, cluster_ids, datanode_ids, block_keys);
+    std::vector<std::vector<int>> block_ids;
+    get_object_cluster_datanode_block(object->object_key, cluster_ids, datanode_ids, block_keys, block_ids);
     for (size_t i = 0; i < cluster_ids.size(); i++) {
       proxy_proto::AppendStripeDataPlacement placement;
       placement.set_cluster_id(cluster_ids[i]);
+      placement.set_append_size(datanode_ids[i].size());
       for (size_t j = 0; j < datanode_ids[i].size(); j++) {
         placement.add_datanodeip(m_node_table[datanode_ids[i][j]].node_ip);
         placement.add_datanodeport(m_node_table[datanode_ids[i][j]].node_port);
         placement.add_blockkeys(block_keys[i][j]);
+        placement.add_blockids(block_ids[i][j]);
       }
       placement.set_stripe_id(stripe_id);
       upload_plan.push_back(placement);
@@ -169,6 +174,7 @@ namespace ECProject
         initialize_shuffled_uniform_lrc_stripe_placement(&t_stripe);
       else
         throw std::runtime_error("Unsupported coding scheme: " + code_type);
+      print_stripe_data_placement(t_stripe);
       m_stripe_table[t_stripe.stripe_id] = std::move(t_stripe);
     }
     std::vector<int> object_placement = place_object_ordered(block_num, m_stripe_group_capacities); // Implementation for greedy placement
@@ -183,7 +189,7 @@ namespace ECProject
           block_used[m_clusters[i][j]] = true;
           object.blocks.push_back(m_clusters[i][j]);
         }
-        else if(m_clusters[i][j] >=k){
+        else if(m_clusters[i][j] >= m_sys_config->k){
           object.blocks.push_back(m_clusters[i][j]); // all global and local parity blocks
         }
         if(num == object_placement[i]){
@@ -194,7 +200,19 @@ namespace ECProject
     m_object_table[objectID] = std::move(object);    
 
     // Implementation for notify proxy and client for uploading object
-
+    std::vector<std::thread> threads;
+    std::vector<proxy_proto::AppendStripeDataPlacement> upload_plan = generate_object_upload_plan(&m_object_table[objectID]);
+    for (const auto &placement : upload_plan) {
+      threads.push_back(std::thread(&CoordinatorImpl::notify_proxies_ready, this, placement)); // Implementation might need adjustments
+      proxyIPPort->add_group_ids(placement.cluster_id());
+      proxyIPPort->add_cluster_slice_sizes(placement.append_size());
+      for(int i = 0; i < placement.blockids_size(); i++) {
+        proxyIPPort->add_block_ids(placement.blockids(i));
+      }
+    }
+    for (auto &thread : threads) {
+        thread.join();
+    }
     return grpc::Status::OK;
   }
   grpc::Status CoordinatorImpl::uploadOriginKeyValue(
@@ -413,6 +431,83 @@ namespace ECProject
     stripe->num_groups = stripe->group_to_blocks.size();
   }
   // implementation for shuffled uniform LRC
+  void CoordinatorImpl::initialize_shuffled_uniform_lrc_stripe_placement(Stripe *stripe)
+  {
+    // range 0~k-1: data blocks
+    // range k~k+r-1: global parity blocks
+    // range k+r~k+r+z-1: local parity blocks
+    Block *blocks_info = new Block[stripe->n];
+    // a stripe is only created by a single client
+    assert(stripe->object_keys.size() == 1);
+    // choose a cluster: round robin
+    int t_cluster_id = stripe->stripe_id % m_sys_config->ClusterNum;
+
+    m_local_groups = ECProject::get_shuffled_uniform_lrc_local_group(stripe->k, stripe->r, stripe->z);
+    m_clusters = ECProject::ECWide(stripe->k, stripe->r, stripe->z, m_local_groups);
+
+    for(int i = 0; i < m_clusters.size(); i++)
+    {
+      for(int j = 0; j < m_clusters[i].size(); j++)
+      {
+        blocks_info[m_clusters[i][j]].map2group = i;
+      }
+    }
+
+    for (int i = 0; i < stripe->n; i++)
+    {
+      blocks_info[i].block_size = m_sys_config->BlockSize;
+      blocks_info[i].map2stripe = stripe->stripe_id;
+      blocks_info[i].map2key = stripe->object_keys[0];
+      if (i < stripe->k)
+      {
+        std::string tmp = "_D";
+        if (i < 10)
+          tmp = "_D0";
+        blocks_info[i].block_key = std::to_string(stripe->stripe_id) + tmp + std::to_string(i);
+        blocks_info[i].block_id = i;
+        blocks_info[i].block_type = 'D';
+      }
+      else if (i >= stripe->k && i < stripe->k + stripe->r)
+      {
+        std::string tmp = "_G";
+        if (i - stripe->k < 10)
+          tmp = "_G0";
+        blocks_info[i].block_key = std::to_string(stripe->stripe_id) + tmp + std::to_string(i - stripe->k);
+        blocks_info[i].block_id = i;
+        blocks_info[i].block_type = 'G';
+      }
+      else
+      {
+        std::string tmp = "_L";
+        if (i - stripe->k - stripe->r < 10)
+          tmp = "_L0";
+        blocks_info[i].block_key = std::to_string(stripe->stripe_id) + tmp + std::to_string(i - stripe->k - stripe->r);
+        blocks_info[i].block_id = i;
+        blocks_info[i].block_type = 'L';
+      }
+      blocks_info[i].map2cluster = (t_cluster_id + blocks_info[i].map2group) % m_sys_config->ClusterNum;
+      int t_node_id = randomly_select_a_node(blocks_info[i].map2cluster, stripe->stripe_id);
+      blocks_info[i].map2node = t_node_id;
+      update_stripe_info_in_node(t_node_id, stripe->stripe_id, i);
+      m_cluster_table[blocks_info[i].map2cluster].blocks.push_back(&blocks_info[i]);
+      m_cluster_table[blocks_info[i].map2cluster].stripes.insert(stripe->stripe_id);
+      stripe->blocks.push_back(&blocks_info[i]);
+      stripe->place2clusters.insert(blocks_info[i].map2cluster);
+      add_to_map(stripe->group_to_blocks, blocks_info[i].map2group, i);
+    }
+    block_used.clear();
+    block_used.resize(m_sys_config->k, false);
+    m_stripe_group_capacities = std::vector<int>(m_clusters.size(), 0);
+    for(int i = 0; i < m_clusters.size(); i++)
+    {
+      for(auto block : m_clusters[i]){
+        if(block < m_sys_config->k){
+          m_stripe_group_capacities[i] ++;
+        }
+      }
+    }
+    stripe->num_groups = stripe->group_to_blocks.size();
+  }
 
   void CoordinatorImpl::initialize_unilrc_and_azurelrc_stripe_placement(Stripe *stripe)
   {

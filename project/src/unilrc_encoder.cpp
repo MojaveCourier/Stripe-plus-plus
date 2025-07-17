@@ -488,6 +488,53 @@ void ECProject::partial_encode_uniform_lrc(int k, int r, int z, int data_block_n
     delete[] local_vector;
 }
 
+void ECProject::partial_encode_uniform_lrc(int k, int r, int z, int data_block_num, std::vector<int> block_indexes, unsigned char **data_ptrs, unsigned char **parity_ptrs, int block_size)
+{
+    for(int i = 0; i < r + z; i++){
+        memset(parity_ptrs[i], 0, block_size);
+    }
+    int m = k + r;
+    unsigned char *encode_matrix = new unsigned char[(m + z) * k];
+    memset(encode_matrix, 0, (m + z) * k);
+    gf_gen_cauchy_matrix1(encode_matrix, m, k);
+
+    unsigned char *local_vector = new unsigned char[k];
+    gf_gen_local_vector(local_vector, k, r);
+    for(int i = 0; i < k; i++){
+        int row = i / (k / z);
+        encode_matrix[(m + row) * k + i] = local_vector[i];
+    }
+    for(int i = 0; i < z; i++){
+        for(int j = 0; j < k; j++){
+            for(int l = 0; l < r; l++){
+                encode_matrix[(m + i) * k + j] ^= encode_matrix[(k + l) * k + j];
+            }
+        }
+    }
+
+    unsigned char *sub_matrix = new unsigned char[(r + z) * data_block_num];
+    for (int i = 0; i < r + z; i++) {
+        for(int j = 0; j < data_block_num; j++) {
+           sub_matrix[i * data_block_num + j] = encode_matrix[(k + i) * k + block_indexes[j]];
+        }
+    }
+
+    unsigned char *g_tbls = new unsigned char[data_block_num * (r + z) * 32];
+    ec_init_tables(data_block_num, r + z, sub_matrix, g_tbls);
+
+    ec_encode_data_avx2(block_size, 
+                        data_block_num,  
+                        r + z,           
+                        g_tbls, 
+                        data_ptrs,       
+                        parity_ptrs);
+
+    delete[] encode_matrix;
+    delete[] sub_matrix;
+    delete[] g_tbls;
+    delete[] local_vector;
+}
+
 void ECProject::encode_shuffled_uniform_lrc(int k, int r, int z, unsigned char **data_ptrs, unsigned char **parity_ptrs, int block_size)
 {
     for(int i = 0; i < r + z; i++){
@@ -520,6 +567,59 @@ void ECProject::encode_shuffled_uniform_lrc(int k, int r, int z, unsigned char *
     delete[] encode_matrix;
     delete[] local_vector;
     delete[] g_tbls;
+}
+
+void ECProject::partial_encode_shuffled_uniform_lrc(int k, int r, int z, int data_block_num, std::vector<int> block_indexes, unsigned char **data_ptrs, unsigned char **parity_ptrs, int block_size)
+{
+    for(int i = 0; i < r + z; i++){
+        memset(parity_ptrs[i], 0, block_size);
+    }
+    int m = k + r;
+    unsigned char *encode_matrix = new unsigned char[(m + z) * k];
+    memset(encode_matrix, 0, (m + z) * k);
+    gf_gen_cauchy_matrix1(encode_matrix, m, k);
+
+    unsigned char *local_vector = new unsigned char[k];
+    gf_gen_local_vector(local_vector, k, r);
+    for(int i = 0; i < k; i++){
+        int row = i / (k / z);
+        encode_matrix[(m + row) * k + i] = local_vector[i];
+    }
+    std::vector<std::vector<int>> local_groups = get_shuffled_uniform_lrc_local_group(k, r, z);
+    for(int i = 0; i < z; i++){
+        int group_size = local_groups[i].size();
+        for(int j = 0; j < group_size; i++){
+            if(local_groups[i][j] < k){
+                encode_matrix[(m + i) * k + j] ^= local_vector[j];
+            }
+            else{
+                for(int l = 0; l < k; l++){
+                    encode_matrix[(m + i) * k + l] ^= encode_matrix[local_groups[i][j] * k + l];
+                }
+            }
+        }
+    }
+
+    unsigned char *sub_matrix = new unsigned char[(r + z) * data_block_num];
+    for (int i = 0; i < r + z; i++) {
+        for(int j = 0; j < data_block_num; j++) {
+           sub_matrix[i * data_block_num + j] = encode_matrix[(k + i) * k + block_indexes[j]];
+        }
+    }
+
+    unsigned char *g_tbls = new unsigned char[data_block_num * (r + z) * 32];
+    ec_init_tables(data_block_num, r + z, sub_matrix, g_tbls);
+
+    ec_encode_data_avx2(block_size, 
+                        data_block_num,  
+                        r + z,           
+                        g_tbls, 
+                        data_ptrs,       
+                        parity_ptrs);
+    delete[] encode_matrix;
+    delete[] sub_matrix;
+    delete[] g_tbls;
+    delete[] local_vector;
 }
 
 void ECProject::partial_encode_shuffled_uniform_lrc(int k, int r, int z, int data_block_num, unsigned char **data_ptrs, unsigned char **parity_ptrs, int block_size)

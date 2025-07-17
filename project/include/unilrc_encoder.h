@@ -65,7 +65,8 @@ namespace ECProject
     void partial_encode_uniform_lrc(int k, int r, int z, int data_block_num, unsigned char **data_ptrs, unsigned char **parity_ptrs, int block_size);
 
     void partial_encode_shuffled_uniform_lrc(int k, int r, int z, int data_block_num, unsigned char **data_ptrs, unsigned char **parity_ptrs, int block_size);
-
+    void partial_encode_uniform_lrc(int k, int r, int z, int data_block_num, std::vector<int> block_indexes, unsigned char **data_ptrs, unsigned char **parity_ptrs, int block_size);
+    void partial_encode_shuffled_uniform_lrc(int k, int r, int z, int data_block_num, std::vector<int> block_indexes, unsigned char **data_ptrs, unsigned char **parity_ptrs, int block_size);
     void decode_unilrc(const int k, const int r, const int z, const int block_num,
                        const std::vector<int> *block_indexes, unsigned char **block_ptrs, unsigned char *res_ptr, int block_size);
 

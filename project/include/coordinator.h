@@ -143,7 +143,7 @@ namespace ECProject
     void initialize_optimal_lrc_stripe_placement(Stripe *stripe);
     void initialize_uniform_lrc_stripe_placement(Stripe *stripe);
     void initialize_shuffled_uniform_lrc_stripe_placement(Stripe *stripe);
-    void get_object_cluster_datanode_blockkey(const std::string &object_id, std::vector<int> &cluster_ids, std::vector<std::vector<int>> &datanode_ids, std::vector<std::vector<std::string>> &block_keys);
+    void get_object_cluster_datanode_block(const std::string &object_id, std::vector<int> &cluster_ids, std::vector<std::vector<int>> &datanode_ids, std::vector<std::vector<std::string>> &block_keys, std::vector<std::vector<int>> &block_ids);
     std::vector<int> place_object_ordered(const int object_size, std::vector<int> &cur_cluster_capacity);
     std::vector<int> place_object_greedily(const int object_size, std::vector<int> &cur_cluster_capacity);
     void add_to_map(std::map<int, std::vector<int>> &map, int key, int value);
