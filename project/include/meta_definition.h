@@ -88,6 +88,7 @@ namespace ECProject
     std::string object_key;
     size_t object_size; // in block number
     int stripe_id; // the stripe id that this object belongs to
+    int cluster_num; // the number of clusters that this object is distributed to
     std::vector<int> blocks; // block_id
   } Object;
 

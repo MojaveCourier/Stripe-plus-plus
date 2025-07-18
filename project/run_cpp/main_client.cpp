@@ -43,12 +43,27 @@ int main(int argc, char **argv)
     else if(parameters[4] == 3){
         code_type = "UniLRC";
     }
+    else if(parameters[4] == 4){
+        code_type = "ShuffledUniformLRC";
+    }
     else{
         std::cout << "Code type error" << std::endl;
         return -1;
     }
     double block_size = static_cast<double> (parameters[3]) / 1024 / 1024; //MB
     int n = k + r + z;
-    
+    std::cout << "Start uploading..." << std::endl;
+    for(int i = 0; i < 5; i++){
+        std::string object_id = "object_" + std::to_string(i);
+        size_t object_size = k / 2 * 65536;
+        std::unique_ptr<char[]> data(new char[object_size]);
+        std::cout << "Uploading object: " << object_id << " with size: " << object_size << std::endl;
+        bool res = client.upload_object(object_id, std::move(data), object_size);
+        if (res) {
+            std::cout << "Upload object " << object_id << " successfully!" << std::endl;
+        } else {
+            std::cout << "Failed to upload object " << object_id << std::endl;
+        }
+    }
     return 0;
 }

@@ -84,7 +84,7 @@ namespace ECProject
     return grpc::Status::OK;
   }
 
-  void CoordinatorImpl::get_object_cluster_datanode_block(const std::string &object_id, std::vector<int> &cluster_ids, std::vector<std::vector<int>> &datanode_ids, std::vector<std::vector<std::string>> &block_keys, std::vector<std::vector<int>> &block_ids)
+  void CoordinatorImpl::get_object_cluster_datanode_block(const std::string &object_id, const int &cluster_num, std::vector<int> &cluster_ids, std::vector<std::vector<int>> &datanode_ids, std::vector<std::vector<std::string>> &block_keys, std::vector<std::vector<int>> &block_ids)
   {
     auto it = m_object_table.find(object_id);
     if (it == m_object_table.end())
@@ -93,9 +93,10 @@ namespace ECProject
     }
     const Object &object = it->second;
     cluster_ids.clear();
-    datanode_ids.clear();
-    block_keys.clear();
-    block_ids.clear();
+    datanode_ids = std::vector<std::vector<int>>(cluster_num);
+    block_keys = std::vector<std::vector<std::string>>(cluster_num);
+    block_ids = std::vector<std::vector<int>>(cluster_num);
+
     int stripe_id = object.stripe_id;
     auto stripe_it = m_stripe_table.find(stripe_id);
     if (stripe_it == m_stripe_table.end())
@@ -127,6 +128,7 @@ namespace ECProject
     auto stripe_it = m_stripe_table.find(stripe_id);
     if (stripe_it == m_stripe_table.end())
     {
+      std::cout << "[ERROR] Stripe not found for object: " << object->object_key << std::endl;
       throw std::runtime_error("Stripe not found for object: " + object->object_key);
     }
     const Stripe &stripe = stripe_it->second;
@@ -134,7 +136,8 @@ namespace ECProject
     std::vector<std::vector<int>> datanode_ids;
     std::vector<std::vector<std::string>> block_keys;
     std::vector<std::vector<int>> block_ids;
-    get_object_cluster_datanode_block(object->object_key, cluster_ids, datanode_ids, block_keys, block_ids);
+    get_object_cluster_datanode_block(object->object_key, object->cluster_num, cluster_ids, datanode_ids, block_keys, block_ids);
+    std::cout << "[INFO] Generated upload plan for object: " << object->object_key << std::endl;
     for (size_t i = 0; i < cluster_ids.size(); i++) {
       proxy_proto::AppendStripeDataPlacement placement;
       placement.set_cluster_id(cluster_ids[i]);
@@ -148,6 +151,7 @@ namespace ECProject
       placement.set_stripe_id(stripe_id);
       upload_plan.push_back(placement);
     }
+    std::cout << "[INFO] Upload plan generated with " << upload_plan.size() << " placements." << std::endl;
     return upload_plan;
   }
 
@@ -162,50 +166,62 @@ namespace ECProject
     int block_num = objectSize / m_sys_config->BlockSize;
     if(m_cur_stripe_capacity < block_num) // Add a new stripe Implementation for Merge
     {
+      m_cur_stripe_capacity = m_sys_config->k;
       Stripe t_stripe;
       t_stripe.stripe_id = m_cur_stripe_id++;
       t_stripe.k = m_sys_config->k;
       t_stripe.r = m_sys_config->r;
       t_stripe.z = m_sys_config->z;
+      t_stripe.n = m_sys_config->n;
       t_stripe.object_keys.push_back(objectID);
       if(code_type == "UniformLRC")
         initialize_uniform_lrc_stripe_placement(&t_stripe);
-      else if(code_type == "shuffledUniformLRC")
+      else if(code_type == "ShuffledUniformLRC")
         initialize_shuffled_uniform_lrc_stripe_placement(&t_stripe);
       else
         throw std::runtime_error("Unsupported coding scheme: " + code_type);
       print_stripe_data_placement(t_stripe);
       m_stripe_table[t_stripe.stripe_id] = std::move(t_stripe);
     }
+    m_cur_stripe_capacity -= block_num;
     std::vector<int> object_placement = place_object_ordered(block_num, m_stripe_group_capacities); // Implementation for greedy placement
+    std::cout << "Object Placement generation done" << std::endl;
     Object object;
     object.object_key = objectID;
     object.object_size = block_num;
+    object.stripe_id = m_cur_stripe_id - 1;
     for(int i = 0; i < object_placement.size(); i++){
       int num = 0;
+      bool cluster_used = 0;
       for(int j = 0; j < m_clusters[i].size(); j++){
         if(m_clusters[i][j] < m_sys_config->k && !block_used[m_clusters[i][j]]){
           num++;
           block_used[m_clusters[i][j]] = true;
           object.blocks.push_back(m_clusters[i][j]);
+          cluster_used = 1;
         }
         else if(m_clusters[i][j] >= m_sys_config->k){
           object.blocks.push_back(m_clusters[i][j]); // all global and local parity blocks
+          cluster_used = 1;
         }
         if(num == object_placement[i]){
           break;
         }
       }
-    }
+      object.cluster_num += cluster_used;
+    } 
     m_object_table[objectID] = std::move(object);    
-
+    std::cout << "" << objectID << " placement done" << std::endl;
     // Implementation for notify proxy and client for uploading object
     std::vector<std::thread> threads;
     std::vector<proxy_proto::AppendStripeDataPlacement> upload_plan = generate_object_upload_plan(&m_object_table[objectID]);
+    std::cout << "upload plan generation done" << std::endl;
     for (const auto &placement : upload_plan) {
       threads.push_back(std::thread(&CoordinatorImpl::notify_proxies_ready, this, placement)); // Implementation might need adjustments
       proxyIPPort->add_group_ids(placement.cluster_id());
       proxyIPPort->add_cluster_slice_sizes(placement.append_size());
+      proxyIPPort->add_proxyips(m_cluster_table[placement.cluster_id()].proxy_ip);
+      proxyIPPort->add_proxyports(m_cluster_table[placement.cluster_id()].proxy_port + ECProject::PROXY_PORT_SHIFT); // use another port to accept data
       for(int i = 0; i < placement.blockids_size(); i++) {
         proxyIPPort->add_block_ids(placement.blockids(i));
       }
@@ -359,8 +375,6 @@ namespace ECProject
     // range k~k+r-1: global parity blocks
     // range k+r~k+r+z-1: local parity blocks
     Block *blocks_info = new Block[stripe->n];
-    // a stripe is only created by a single client
-    assert(stripe->object_keys.size() == 1);
     // choose a cluster: round robin
     int t_cluster_id = stripe->stripe_id % m_sys_config->ClusterNum;
 
@@ -437,14 +451,10 @@ namespace ECProject
     // range k~k+r-1: global parity blocks
     // range k+r~k+r+z-1: local parity blocks
     Block *blocks_info = new Block[stripe->n];
-    // a stripe is only created by a single client
-    assert(stripe->object_keys.size() == 1);
     // choose a cluster: round robin
     int t_cluster_id = stripe->stripe_id % m_sys_config->ClusterNum;
-
     m_local_groups = ECProject::get_shuffled_uniform_lrc_local_group(stripe->k, stripe->r, stripe->z);
     m_clusters = ECProject::ECWide(stripe->k, stripe->r, stripe->z, m_local_groups);
-
     for(int i = 0; i < m_clusters.size(); i++)
     {
       for(int j = 0; j < m_clusters[i].size(); j++)

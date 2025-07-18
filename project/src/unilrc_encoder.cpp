@@ -414,7 +414,7 @@ void ECProject::encode_uniform_lrc(int k, int r, int z, unsigned char **data_ptr
     std::vector<std::vector<int>> local_groups = get_uniform_lrc_local_group(k, r, z);
     for(int i = 0; i < z; i++){
         int group_size = local_groups[i].size();
-        for(int j = 0; j < group_size; i++){
+        for(int j = 0; j < group_size; j++){
             if(local_groups[i][j] < k){
                 encode_matrix[(m + i) * k + j] ^= local_vector[j];
             }
@@ -453,7 +453,7 @@ void ECProject::partial_encode_uniform_lrc(int k, int r, int z, int data_block_n
     std::vector<std::vector<int>> local_groups = get_uniform_lrc_local_group(k, r, z);
     for(int i = 0; i < z; i++){
         int group_size = local_groups[i].size();
-        for(int j = 0; j < group_size; i++){
+        for(int j = 0; j < group_size; j++){
             if(local_groups[i][j] < k){
                 encode_matrix[(m + i) * k + j] ^= local_vector[j];
             }
@@ -550,7 +550,7 @@ void ECProject::encode_shuffled_uniform_lrc(int k, int r, int z, unsigned char *
     std::vector<std::vector<int>> local_groups = get_shuffled_uniform_lrc_local_group(k, r, z);
     for(int i = 0; i < z; i++){
         int group_size = local_groups[i].size();
-        for(int j = 0; j < group_size; i++){
+        for(int j = 0; j < group_size; j++){
             if(local_groups[i][j] < k){
                 encode_matrix[(m + i) * k + j] ^= local_vector[j];
             }
@@ -588,7 +588,7 @@ void ECProject::partial_encode_shuffled_uniform_lrc(int k, int r, int z, int dat
     std::vector<std::vector<int>> local_groups = get_shuffled_uniform_lrc_local_group(k, r, z);
     for(int i = 0; i < z; i++){
         int group_size = local_groups[i].size();
-        for(int j = 0; j < group_size; i++){
+        for(int j = 0; j < group_size; j++){
             if(local_groups[i][j] < k){
                 encode_matrix[(m + i) * k + j] ^= local_vector[j];
             }
@@ -599,17 +599,15 @@ void ECProject::partial_encode_shuffled_uniform_lrc(int k, int r, int z, int dat
             }
         }
     }
-
     unsigned char *sub_matrix = new unsigned char[(r + z) * data_block_num];
     for (int i = 0; i < r + z; i++) {
         for(int j = 0; j < data_block_num; j++) {
            sub_matrix[i * data_block_num + j] = encode_matrix[(k + i) * k + block_indexes[j]];
         }
     }
-
     unsigned char *g_tbls = new unsigned char[data_block_num * (r + z) * 32];
     ec_init_tables(data_block_num, r + z, sub_matrix, g_tbls);
-
+    std::cout << "init tables done" << std::endl;
     ec_encode_data_avx2(block_size, 
                         data_block_num,  
                         r + z,           
@@ -642,7 +640,7 @@ void ECProject::partial_encode_shuffled_uniform_lrc(int k, int r, int z, int dat
     std::vector<std::vector<int>> local_groups = get_shuffled_uniform_lrc_local_group(k, r, z);
     for(int i = 0; i < z; i++){
         int group_size = local_groups[i].size();
-        for(int j = 0; j < group_size; i++){
+        for(int j = 0; j < group_size; j++){
             if(local_groups[i][j] < k){
                 encode_matrix[(m + i) * k + j] ^= local_vector[j];
             }

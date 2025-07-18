@@ -63,74 +63,6 @@ namespace ECProject
       return false;
     }
   }
-  /*
-    Function: set
-    1. send the set request including the information of key and valuesize to the coordinator
-    2. get the address of proxy
-    3. send the value to the proxy by socket
-  */
-  bool Client::set(std::string key, std::string value)
-  {
-    grpc::ClientContext get_proxy_ip_port;
-    coordinator_proto::RequestProxyIPPort request;
-    coordinator_proto::ReplyProxyIPPort reply;
-    request.set_key(key);
-    request.set_valuesizebytes(value.size());
-    grpc::Status status = m_coordinator_ptr->uploadOriginKeyValue(&get_proxy_ip_port, request, &reply);
-    if (!status.ok())
-    {
-      std::cout << "[SET] upload data failed!" << std::endl;
-      return false;
-    }
-    else
-    {
-      std::string proxy_ip = reply.proxyip();
-      int proxy_port = reply.proxyport();
-      std::cout << "[SET] Send " << key << " to proxy_address:" << proxy_ip << ":" << proxy_port << std::endl;
-      // read to send the value
-      asio::io_context io_context;
-      asio::error_code error;
-      asio::ip::tcp::resolver resolver(io_context);
-      asio::ip::tcp::resolver::results_type endpoints =
-          resolver.resolve(proxy_ip, std::to_string(proxy_port));
-      asio::ip::tcp::socket sock_data(io_context);
-      asio::connect(sock_data, endpoints);
-
-      // std::cout << "[SET] key_size:" << key.size() << ", value_size:" << value.size();
-      // std::cout << ", proxy_address:" << proxy_ip << ":" << proxy_port << std::endl;
-      asio::write(sock_data, asio::buffer(key, key.size()), error);
-      asio::write(sock_data, asio::buffer(value, value.size()), error);
-      asio::error_code ignore_ec;
-      sock_data.shutdown(asio::ip::tcp::socket::shutdown_send, ignore_ec);
-      sock_data.close(ignore_ec);
-
-      // check if metadata is saved successfully
-      grpc::ClientContext check_commit;
-      coordinator_proto::AskIfSuccess request;
-      request.set_key(key);
-      OpperateType opp = SET;
-      request.set_opp(opp);
-      coordinator_proto::RepIfSuccess reply;
-      grpc::Status status;
-      status = m_coordinator_ptr->checkCommitAbort(&check_commit, request, &reply);
-      if (status.ok())
-      {
-        if (reply.ifcommit())
-        {
-          return true;
-        }
-        else
-        {
-          std::cout << "[SET] " << key << " not commit!!!!!" << std::endl;
-        }
-      }
-      else
-      {
-        std::cout << "[SET] " << key << " Fail to check!!!!!" << std::endl;
-      }
-    }
-    return false;
-  }
 
   int Client::get_append_slice_plans(std::string append_mode, const int curr_logical_offset, const int append_size, std::vector<std::vector<int>> *node_slice_sizes_per_cluster, std::vector<int> *modified_data_block_nums_per_cluster, std::vector<int> *data_ptr_size_array, int &parity_slice_size, int &parity_slice_offset)
   {
@@ -614,13 +546,13 @@ namespace ECProject
     coordinator_proto::ReplyProxyIPsPorts reply;
     request.set_key(object_id);
     request.set_valuesizebytes(data_size);
-    grpc::Status status = m_coordinator_ptr->uploadObjectValue(&context, request, &reply);
+    grpc::Status status;
+    status = m_coordinator_ptr->uploadObjectValue(&context, request, &reply);
     if (!status.ok())
     {
       std::cout << "[UPLOAD_OBJECT] upload data failed!" << std::endl;
       return false;
-    } 
-    
+    }
     int cluster_num = reply.group_ids_size();
     int block_num = reply.block_ids_size(); 
     int parity_num = m_sys_config->r + m_sys_config->z;
@@ -644,7 +576,9 @@ namespace ECProject
     for(int i = 0; i < parity_num; i++){
       parity_ptr_array[i] = parity_blocks.get() + i * m_sys_config->BlockSize;
     }
-    ECProject::partial_encode_shuffled_uniform_lrc(m_sys_config->k, m_sys_config->r, m_sys_config->z, object_to_data_blockids.size(), object_to_data_blockids, reinterpret_cast<unsigned char **>(data_ptr_array.data()), reinterpret_cast<unsigned char **>(parity_ptr_array.data()), m_sys_config->BlockSize);
+    std::cout << "Splitting done" << std::endl;
+    ECProject::partial_encode_shuffled_uniform_lrc(m_sys_config->k, m_sys_config->r, m_sys_config->z, object_to_data_blockids.size(), object_to_data_blockids, 
+      reinterpret_cast<unsigned char **>(data_ptr_array.data()), reinterpret_cast<unsigned char **>(parity_ptr_array.data()), m_sys_config->BlockSize);
     // upload to proxies
     std::vector<std::vector<int>> block_ids_for_each_proxy(cluster_num);
     for(int i = 0, cur = 0; i < reply.group_ids_size(); i++){
@@ -665,13 +599,15 @@ namespace ECProject
       }
       block_id_to_ptr_offset[reply.block_ids(i)] = i; // map the block id to the pointer offset
     }
+    std::cout << "Connecting to proxies..." << std::endl;
+    // Implemetation: bugs below
     std::vector<std::thread> upload_threads;
     auto upload_func = [&](int cluster_id) {
       asio::io_context io_context;
       asio::error_code error;
       asio::ip::tcp::resolver resolver(io_context);
       asio::ip::tcp::resolver::results_type endpoints =
-          resolver.resolve(reply.proxyips(cluster_id), std::to_string(reply.proxyports(cluster_id)));
+          resolver.resolve(reply.proxyips(cluster_id), std::to_string(reply.proxyports(cluster_id))); //bug
       asio::ip::tcp::socket sock_data(io_context);
       asio::connect(sock_data, endpoints);
 
@@ -690,6 +626,7 @@ namespace ECProject
     {
       thread.join();
     }
+    std::cout << "Uploading Object done" << std::endl;
     return status.ok();
   }
 
@@ -1374,6 +1311,10 @@ namespace ECProject
     else if(m_sys_config->CodeType == "UniLRC")
     {
       parameters.push_back(3);
+    }
+    else if(m_sys_config->CodeType == "ShuffledUniformLRC")
+    {
+      parameters.push_back(4);
     }
     else
     {
