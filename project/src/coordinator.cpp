@@ -141,12 +141,18 @@ namespace ECProject
     for (size_t i = 0; i < cluster_ids.size(); i++) {
       proxy_proto::AppendStripeDataPlacement placement;
       placement.set_cluster_id(cluster_ids[i]);
-      placement.set_append_size(datanode_ids[i].size());
+      placement.set_stripe_id(m_cur_stripe_id - 1);
+      placement.set_append_size(datanode_ids[i].size() * m_sys_config->BlockSize);
+      placement.set_is_merge_parity(false);
+      placement.set_append_mode("UNILRC_MODE");
+      placement.set_is_serialized(false);
       for (size_t j = 0; j < datanode_ids[i].size(); j++) {
         placement.add_datanodeip(m_node_table[datanode_ids[i][j]].node_ip);
         placement.add_datanodeport(m_node_table[datanode_ids[i][j]].node_port);
         placement.add_blockkeys(block_keys[i][j]);
         placement.add_blockids(block_ids[i][j]);
+        placement.add_sizes(m_sys_config->BlockSize);
+        placement.add_offsets(0); // Implementation for adjustement
       }
       placement.set_stripe_id(stripe_id);
       upload_plan.push_back(placement);
@@ -163,8 +169,8 @@ namespace ECProject
     std::string objectID = keyValueSize->key();
     size_t objectSize = keyValueSize->valuesizebytes();
     std::string code_type = m_sys_config->CodeType;
-    int block_num = objectSize / m_sys_config->BlockSize;
-    if(m_cur_stripe_capacity < block_num) // Add a new stripe Implementation for Merge
+    int data_block_num = objectSize / m_sys_config->BlockSize;
+    if(m_cur_stripe_capacity < data_block_num) // Add a new stripe Implementation for Merge
     {
       m_cur_stripe_capacity = m_sys_config->k;
       Stripe t_stripe;
@@ -183,39 +189,39 @@ namespace ECProject
       print_stripe_data_placement(t_stripe);
       m_stripe_table[t_stripe.stripe_id] = std::move(t_stripe);
     }
-    m_cur_stripe_capacity -= block_num;
-    std::vector<int> object_placement = place_object_ordered(block_num, m_stripe_group_capacities); // Implementation for greedy placement
-    std::cout << "Object Placement generation done" << std::endl;
+    m_cur_stripe_capacity -= data_block_num;
+    std::vector<int> object_placement = place_object_ordered(data_block_num, m_stripe_group_capacities); // Implementation for greedy placement
     Object object;
     object.object_key = objectID;
-    object.object_size = block_num;
+    object.object_size = data_block_num;
     object.stripe_id = m_cur_stripe_id - 1;
     for(int i = 0; i < object_placement.size(); i++){
       int num = 0;
       bool cluster_used = 0;
+      bool data_cluster_used = 0;
       for(int j = 0; j < m_clusters[i].size(); j++){
-        if(m_clusters[i][j] < m_sys_config->k && !block_used[m_clusters[i][j]]){
+        if(m_clusters[i][j] < m_sys_config->k && !block_used[m_clusters[i][j]] && num < object_placement[i]){
           num++;
           block_used[m_clusters[i][j]] = true;
           object.blocks.push_back(m_clusters[i][j]);
+          object.data_blocks.push_back(m_clusters[i][j]);
           cluster_used = 1;
+          data_cluster_used = 1;
         }
         else if(m_clusters[i][j] >= m_sys_config->k){
           object.blocks.push_back(m_clusters[i][j]); // all global and local parity blocks
           cluster_used = 1;
         }
-        if(num == object_placement[i]){
-          break;
-        }
       }
       object.cluster_num += cluster_used;
-    } 
-    m_object_table[objectID] = std::move(object);    
-    std::cout << "" << objectID << " placement done" << std::endl;
+      object.data_cluster_num += data_cluster_used;
+    }
+    m_object_table[objectID] = std::move(object);
+    std::cout << "[INFO] " << objectID << " placement done" << std::endl;
     // Implementation for notify proxy and client for uploading object
     std::vector<std::thread> threads;
     std::vector<proxy_proto::AppendStripeDataPlacement> upload_plan = generate_object_upload_plan(&m_object_table[objectID]);
-    std::cout << "upload plan generation done" << std::endl;
+    std::cout << "[INFO] upload plan generation done" << std::endl;
     for (const auto &placement : upload_plan) {
       threads.push_back(std::thread(&CoordinatorImpl::notify_proxies_ready, this, placement)); // Implementation might need adjustments
       proxyIPPort->add_group_ids(placement.cluster_id());
@@ -229,78 +235,6 @@ namespace ECProject
     for (auto &thread : threads) {
         thread.join();
     }
-    return grpc::Status::OK;
-  }
-  grpc::Status CoordinatorImpl::uploadOriginKeyValue(
-      grpc::ServerContext *context,
-      const coordinator_proto::RequestProxyIPPort *keyValueSize,
-      coordinator_proto::ReplyProxyIPPort *proxyIPPort)
-  {
-
-    std::string key = keyValueSize->key();
-    m_mutex.lock();
-    m_object_commit_table.erase(key);
-    m_mutex.unlock();
-    int valuesizebytes = keyValueSize->valuesizebytes();
-
-    ObjectInfo new_object;
-
-    int k = m_encode_parameters.k_datablock;
-    int g_m = m_encode_parameters.g_m_globalparityblock;
-    int l = m_encode_parameters.l_localparityblock;
-    // int b = m_encode_parameters.b_datapergroup;
-    new_object.object_size = valuesizebytes;
-    int block_size = ceil(valuesizebytes, k);
-
-    proxy_proto::ObjectAndPlacement object_placement;
-    object_placement.set_key(key);
-    object_placement.set_valuesizebyte(valuesizebytes);
-    object_placement.set_k(k);
-    object_placement.set_g_m(g_m);
-    object_placement.set_l(l);
-    object_placement.set_encode_type((int)m_encode_parameters.encodetype);
-    object_placement.set_block_size(block_size);
-
-    Stripe t_stripe;
-    t_stripe.stripe_id = m_cur_stripe_id++;
-    t_stripe.k = k;
-    t_stripe.l = l;
-    t_stripe.g_m = g_m;
-    t_stripe.object_keys.push_back(key);
-    t_stripe.object_sizes.push_back(valuesizebytes);
-    m_stripe_table[t_stripe.stripe_id] = t_stripe;
-    new_object.map2stripe = t_stripe.stripe_id;
-
-    int s_cluster_id = generate_placement(t_stripe.stripe_id, block_size);
-
-    Stripe &stripe = m_stripe_table[t_stripe.stripe_id];
-    object_placement.set_stripe_id(stripe.stripe_id);
-    for (int i = 0; i < int(stripe.blocks.size()); i++)
-    {
-      object_placement.add_datanodeip(m_node_table[stripe.blocks[i]->map2node].node_ip);
-      object_placement.add_datanodeport(m_node_table[stripe.blocks[i]->map2node].node_port);
-      object_placement.add_blockkeys(stripe.blocks[i]->block_key);
-    }
-
-    grpc::ClientContext cont;
-    proxy_proto::SetReply set_reply;
-    std::string selected_proxy_ip = m_cluster_table[s_cluster_id].proxy_ip;
-    int selected_proxy_port = m_cluster_table[s_cluster_id].proxy_port;
-    std::string chosen_proxy = selected_proxy_ip + ":" + std::to_string(selected_proxy_port);
-    grpc::Status status = m_proxy_ptrs[chosen_proxy]->encodeAndSetObject(&cont, object_placement, &set_reply);
-    proxyIPPort->set_proxyip(selected_proxy_ip);
-    proxyIPPort->set_proxyport(selected_proxy_port + ECProject::PROXY_PORT_SHIFT); // use another port to accept data
-    if (status.ok())
-    {
-      m_mutex.lock();
-      m_object_updating_table[key] = new_object;
-      m_mutex.unlock();
-    }
-    else
-    {
-      std::cout << "[SET] Send object placement failed!" << std::endl;
-    }
-
     return grpc::Status::OK;
   }
 
@@ -379,7 +313,7 @@ namespace ECProject
     int t_cluster_id = stripe->stripe_id % m_sys_config->ClusterNum;
 
     m_local_groups = ECProject::get_uniform_lrc_local_group(stripe->k, stripe->r, stripe->z);
-    m_clusters = ECProject::ECWide(stripe->k, stripe->r, stripe->z, m_local_groups);
+    m_clusters = ECProject::ECWide(stripe->k, stripe->r, stripe->z, m_local_groups); //implementation for ECWide
 
     for(int i = 0; i < m_clusters.size(); i++)
     {

@@ -90,6 +90,8 @@ namespace ECProject
     int stripe_id; // the stripe id that this object belongs to
     int cluster_num; // the number of clusters that this object is distributed to
     std::vector<int> blocks; // block_id
+    int data_cluster_num; // the number of clusters that this object is distributed to for data blocks
+    std::vector<int> data_blocks; // data block id
   } Object;
 
   typedef struct ObjectInfo

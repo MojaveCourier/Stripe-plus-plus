@@ -554,7 +554,7 @@ namespace ECProject
       return false;
     }
     int cluster_num = reply.group_ids_size();
-    int block_num = reply.block_ids_size(); 
+    int block_num = reply.block_ids_size();
     int parity_num = m_sys_config->r + m_sys_config->z;
     std::unique_ptr<char[]> parity_blocks = std::make_unique<char[]>(parity_num * m_sys_config->BlockSize);
     std::vector<int> object_to_data_blockids;
@@ -565,13 +565,13 @@ namespace ECProject
     std::vector<int> block_cnt_for_each_cluster(cluster_num, 0);
     for(int i = 0; i < reply.cluster_slice_sizes_size(); i++)
     {
-      block_cnt_for_each_cluster[i] = reply.cluster_slice_sizes(i);
+      block_cnt_for_each_cluster[i] = reply.cluster_slice_sizes(i) / m_sys_config->BlockSize;
     }
     // split the data into blocks, partial encoding, implementation for uniform lrc
-    std::vector<char *> data_ptr_array(block_num);
+    std::vector<char *> data_ptr_array(block_num - parity_num);
     std::vector<char *> parity_ptr_array(parity_num);
-    for(int i = 0; i < block_num; i++){
-      data_ptr_array[i] = data.get() + i * m_sys_config->BlockSize;
+    for(int i = 0; i < block_num - parity_num; i++){
+      data_ptr_array[i] = data.get() + i * m_sys_config->BlockSize; // data blocks
     }
     for(int i = 0; i < parity_num; i++){
       parity_ptr_array[i] = parity_blocks.get() + i * m_sys_config->BlockSize;
@@ -579,11 +579,11 @@ namespace ECProject
     std::cout << "Splitting done" << std::endl;
     ECProject::partial_encode_shuffled_uniform_lrc(m_sys_config->k, m_sys_config->r, m_sys_config->z, object_to_data_blockids.size(), object_to_data_blockids, 
       reinterpret_cast<unsigned char **>(data_ptr_array.data()), reinterpret_cast<unsigned char **>(parity_ptr_array.data()), m_sys_config->BlockSize);
+    std::cout << "Encoding done" << std::endl;
     // upload to proxies
     std::vector<std::vector<int>> block_ids_for_each_proxy(cluster_num);
     for(int i = 0, cur = 0; i < reply.group_ids_size(); i++){
-      int proxy_block_num = reply.cluster_slice_sizes(i);
-      for(int j = 0; j < proxy_block_num; j++){
+      for(int j = 0; j < block_cnt_for_each_cluster[i]; j++){
         block_ids_for_each_proxy[i].push_back(reply.block_ids(cur++));
       }
     }

@@ -614,6 +614,7 @@ void ECProject::partial_encode_shuffled_uniform_lrc(int k, int r, int z, int dat
                         g_tbls, 
                         data_ptrs,       
                         parity_ptrs);
+    std::cout << "encode data done" << std::endl;
     delete[] encode_matrix;
     delete[] sub_matrix;
     delete[] g_tbls;
