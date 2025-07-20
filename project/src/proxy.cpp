@@ -548,7 +548,7 @@ namespace ECProject
     std::cout << "===================================" << std::endl;
   }
 
-  grpc::Status ProxyImpl::scheduleAppend2Datanode(
+  grpc::Status ProxyImpl::scheduleAppend2Datanode( //implementation for append
       grpc::ServerContext *context,
       const proxy_proto::AppendStripeDataPlacement *append_stripe_data_placement,
       proxy_proto::SetReply *response)

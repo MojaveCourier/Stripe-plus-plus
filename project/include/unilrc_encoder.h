@@ -89,6 +89,7 @@ namespace ECProject
     std::vector<std::vector<int>> get_shuffled_uniform_lrc_local_group(const int k, const int g, const int l);
 
     std::vector<std::vector<int>> ECWide(int k, int r, int z, std::vector<std::vector<int>> local_group);
+    std::vector<std::vector<int>> ECWide_optimal(int k, int r, int z, std::vector<std::vector<int>> local_group);
 
     unsigned char
     gf_inv(unsigned char a);

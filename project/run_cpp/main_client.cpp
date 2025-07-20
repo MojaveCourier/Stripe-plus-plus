@@ -53,9 +53,9 @@ int main(int argc, char **argv)
     double block_size = static_cast<double> (parameters[3]) / 1024 / 1024; //MB
     int n = k + r + z;
     std::cout << "Start uploading..." << std::endl;
-    for(int i = 0; i < 50; i++){
+    for(int i = 0; i < 500; i++){
         std::string object_id = "object_" + std::to_string(i);
-        size_t object_size = k / 2 * 65536;
+        size_t object_size = k / 10 * 65536;
         std::unique_ptr<char[]> data(new char[object_size]);
         std::cout << "Uploading object: " << object_id << " with size: " << object_size << std::endl;
         bool res = client.upload_object(object_id, std::move(data), object_size);

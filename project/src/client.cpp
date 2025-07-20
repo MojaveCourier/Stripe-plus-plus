@@ -567,7 +567,7 @@ namespace ECProject
     {
       block_cnt_for_each_cluster[i] = reply.cluster_slice_sizes(i) / m_sys_config->BlockSize;
     }
-    // split the data into blocks, partial encoding, implementation for uniform lrc
+    // split the data into blocks, partial encoding
     std::vector<char *> data_ptr_array(block_num - parity_num);
     std::vector<char *> parity_ptr_array(parity_num);
     for(int i = 0; i < block_num - parity_num; i++){
@@ -576,9 +576,16 @@ namespace ECProject
     for(int i = 0; i < parity_num; i++){
       parity_ptr_array[i] = parity_blocks.get() + i * m_sys_config->BlockSize;
     }
-    std::cout << "Splitting done" << std::endl;
-    ECProject::partial_encode_shuffled_uniform_lrc(m_sys_config->k, m_sys_config->r, m_sys_config->z, object_to_data_blockids.size(), object_to_data_blockids, 
-      reinterpret_cast<unsigned char **>(data_ptr_array.data()), reinterpret_cast<unsigned char **>(parity_ptr_array.data()), m_sys_config->BlockSize);
+    if(m_sys_config -> CodeType == "ShuffledUniformLRC")
+      ECProject::partial_encode_shuffled_uniform_lrc(m_sys_config->k, m_sys_config->r, m_sys_config->z, object_to_data_blockids.size(), object_to_data_blockids, 
+        reinterpret_cast<unsigned char **>(data_ptr_array.data()), reinterpret_cast<unsigned char **>(parity_ptr_array.data()), m_sys_config->BlockSize);
+    else if(m_sys_config -> CodeType == "UniformLRC")
+      ECProject::partial_encode_uniform_lrc(m_sys_config->k, m_sys_config->r, m_sys_config->z, object_to_data_blockids.size(), object_to_data_blockids, 
+        reinterpret_cast<unsigned char **>(data_ptr_array.data()), reinterpret_cast<unsigned char **>(parity_ptr_array.data()), m_sys_config->BlockSize);
+    else{
+      std::cout << "Unsupported Code Type!" << std::endl;
+      return false;
+    }        
     std::cout << "Encoding done" << std::endl;
     // upload to proxies
     std::vector<std::vector<int>> block_ids_for_each_proxy(cluster_num);

@@ -1026,7 +1026,74 @@ ECProject::ECWide(int k, int r, int z, std::vector<std::vector<int>> local_group
             }
         }
         
-        // 添加额外的校验块
+        // 添加额外的全局校验块
+        parity_blocks.push_back(k + r + i);
+        
+        // 计算需要的cluster数量
+        int total_blocks = data_blocks.size() + parity_blocks.size();
+        int cluster_num = (total_blocks + cluster_capacity - 1) / cluster_capacity; // 向上取整
+        
+        std::vector<std::vector<int>> cur_clusters(cluster_num);
+        
+        // 优先策略：尽可能将校验块放在一起
+        int cluster_idx = 0;
+        int parity_idx = 0;
+        
+        // 第一步：尽可能将校验块填满前面的cluster
+        while(parity_idx < parity_blocks.size() && cluster_idx < cluster_num) {
+            // 在当前cluster中尽可能多地放置校验块
+            while(cur_clusters[cluster_idx].size() < cluster_capacity && parity_idx < parity_blocks.size()) {
+                cur_clusters[cluster_idx].push_back(parity_blocks[parity_idx]);
+                parity_idx++;
+            }
+            
+            // 如果当前cluster已满或校验块已分配完，移到下一个cluster
+            if(cur_clusters[cluster_idx].size() == cluster_capacity || parity_idx >= parity_blocks.size()) {
+                cluster_idx++;
+            }
+        }
+        
+        // 第二步：在有剩余空间的cluster中填充数据块
+        int data_idx = 0;
+        cluster_idx = 0; // 重新从第一个cluster开始
+        
+        while(data_idx < data_blocks.size() && cluster_idx < cluster_num) {
+            // 在当前cluster中尽可能多地放置数据块
+            while(cur_clusters[cluster_idx].size() < cluster_capacity && data_idx < data_blocks.size()) {
+                cur_clusters[cluster_idx].push_back(data_blocks[data_idx]);
+                data_idx++;
+            }
+            cluster_idx++;
+        }
+        
+        // 将当前local group的所有cluster添加到总集合中
+        for(int j = 0; j < cluster_num; j++){
+            clusters.push_back(cur_clusters[j]);
+        }
+    }
+    
+    return clusters;
+}
+
+std::vector<std::vector<int>> ECProject::ECWide_optimal(int k, int r, int z, std::vector<std::vector<int>> local_group)
+{
+    int cluster_capacity = r + 1;
+    std::vector<std::vector<int>> clusters;
+    
+    for(int i = 0; i < local_group.size(); i++){
+        // 分离数据块和校验块
+        std::vector<int> data_blocks;
+        std::vector<int> parity_blocks;
+        
+        for(int j = 0; j < local_group[i].size(); j++){
+            if(local_group[i][j] >= k){
+                parity_blocks.push_back(local_group[i][j]);
+            } else {
+                data_blocks.push_back(local_group[i][j]);
+            }
+        }
+        
+        // 添加额外的全局校验块
         parity_blocks.push_back(k + r + i);
         
         // 计算需要的cluster数量

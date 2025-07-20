@@ -138,24 +138,60 @@ namespace ECProject
     std::vector<std::vector<int>> block_ids;
     get_object_cluster_datanode_block(object->object_key, object->cluster_num, cluster_ids, datanode_ids, block_keys, block_ids);
     std::cout << "[INFO] Generated upload plan for object: " << object->object_key << std::endl;
-    for (size_t i = 0; i < cluster_ids.size(); i++) {
-      proxy_proto::AppendStripeDataPlacement placement;
-      placement.set_cluster_id(cluster_ids[i]);
-      placement.set_stripe_id(m_cur_stripe_id - 1);
-      placement.set_append_size(datanode_ids[i].size() * m_sys_config->BlockSize);
-      placement.set_is_merge_parity(false);
-      placement.set_append_mode("UNILRC_MODE");
-      placement.set_is_serialized(false);
-      for (size_t j = 0; j < datanode_ids[i].size(); j++) {
-        placement.add_datanodeip(m_node_table[datanode_ids[i][j]].node_ip);
-        placement.add_datanodeport(m_node_table[datanode_ids[i][j]].node_port);
-        placement.add_blockkeys(block_keys[i][j]);
-        placement.add_blockids(block_ids[i][j]);
-        placement.add_sizes(m_sys_config->BlockSize);
-        placement.add_offsets(0); // Implementation for adjustement
+    if(m_sys_config->CodingMode == "ReplicationMode"){
+      for (size_t i = 0; i < cluster_ids.size(); i++) {
+        proxy_proto::AppendStripeDataPlacement placement;
+        placement.set_cluster_id(cluster_ids[i]);
+        placement.set_stripe_id(m_cur_stripe_id - 1);
+        placement.set_append_size(datanode_ids[i].size() * m_sys_config->BlockSize);
+        placement.set_is_merge_parity(false);
+        placement.set_append_mode("UNILRC_MODE");
+        placement.set_is_serialized(false);
+        for (size_t j = 0; j < datanode_ids[i].size(); j++) {
+          if(datanode_ids[i][j] >= m_sys_config->k){
+            for(int k = 0; k < object->data_blocks.size(); k++){
+              placement.add_datanodeip(m_node_table[datanode_ids[i][j]].node_ip);
+              placement.add_datanodeport(m_node_table[datanode_ids[i][j]].node_port);
+              placement.add_blockkeys(stripe.blocks[object->data_blocks[k]]->block_key);
+              placement.add_blockids(object->data_blocks[k]);
+              placement.add_sizes(m_sys_config->BlockSize);
+              placement.add_offsets(0); // Implementation for rep mode
+            }
+          }
+          else{
+            placement.add_datanodeip(m_node_table[datanode_ids[i][j]].node_ip);
+            placement.add_datanodeport(m_node_table[datanode_ids[i][j]].node_port);
+            placement.add_blockkeys(block_keys[i][j]);
+            placement.add_blockids(block_ids[i][j]);
+            placement.add_sizes(m_sys_config->BlockSize);
+            placement.add_offsets(0); 
+          }
+
+        }
+        placement.set_stripe_id(stripe_id);
+        upload_plan.push_back(placement);
       }
-      placement.set_stripe_id(stripe_id);
-      upload_plan.push_back(placement);
+    }
+    else{
+      for (size_t i = 0; i < cluster_ids.size(); i++) {
+        proxy_proto::AppendStripeDataPlacement placement;
+        placement.set_cluster_id(cluster_ids[i]);
+        placement.set_stripe_id(m_cur_stripe_id - 1);
+        placement.set_append_size(datanode_ids[i].size() * m_sys_config->BlockSize);
+        placement.set_is_merge_parity(false);
+        placement.set_append_mode("UNILRC_MODE");
+        placement.set_is_serialized(false);
+        for (size_t j = 0; j < datanode_ids[i].size(); j++) {
+          placement.add_datanodeip(m_node_table[datanode_ids[i][j]].node_ip);
+          placement.add_datanodeport(m_node_table[datanode_ids[i][j]].node_port);
+          placement.add_blockkeys(block_keys[i][j]);
+          placement.add_blockids(block_ids[i][j]);
+          placement.add_sizes(m_sys_config->BlockSize);
+          placement.add_offsets(0);
+        }
+        placement.set_stripe_id(stripe_id);
+        upload_plan.push_back(placement);
+      }
     }
     std::cout << "[INFO] Upload plan generated with " << upload_plan.size() << " placements." << std::endl;
     return upload_plan;
@@ -190,7 +226,15 @@ namespace ECProject
       m_stripe_table[t_stripe.stripe_id] = std::move(t_stripe);
     }
     m_cur_stripe_capacity -= data_block_num;
-    std::vector<int> object_placement = place_object_ordered(data_block_num, m_stripe_group_capacities); // Implementation for greedy placement
+    std::vector<int> object_placement; 
+    if(m_sys_config->ObjectPlaceMode == "OrderedPlacement")
+      object_placement = place_object_ordered(data_block_num, m_stripe_group_capacities);
+    else if(m_sys_config->ObjectPlaceMode == "GreedyPlacement")
+      object_placement = place_object_greedily(data_block_num, m_stripe_group_capacities);
+    else{
+      std::cout << "Unsupported Object Placement Mode!" << std::endl;
+      return grpc::Status(grpc::StatusCode::INVALID_ARGUMENT, "Unsupported Object Placement Mode");
+    }
     Object object;
     object.object_key = objectID;
     object.object_size = data_block_num;
@@ -218,12 +262,12 @@ namespace ECProject
     }
     m_object_table[objectID] = std::move(object);
     std::cout << "[INFO] " << objectID << " placement done" << std::endl;
-    // Implementation for notify proxy and client for uploading object
+    // Implementation for rep mode
     std::vector<std::thread> threads;
-    std::vector<proxy_proto::AppendStripeDataPlacement> upload_plan = generate_object_upload_plan(&m_object_table[objectID]);
+    std::vector<proxy_proto::AppendStripeDataPlacement> upload_plan = generate_object_upload_plan(&m_object_table[objectID]); 
     std::cout << "[INFO] upload plan generation done" << std::endl;
     for (const auto &placement : upload_plan) {
-      threads.push_back(std::thread(&CoordinatorImpl::notify_proxies_ready, this, placement)); // Implementation might need adjustments
+      threads.push_back(std::thread(&CoordinatorImpl::notify_proxies_ready, this, placement));
       proxyIPPort->add_group_ids(placement.cluster_id());
       proxyIPPort->add_cluster_slice_sizes(placement.append_size());
       proxyIPPort->add_proxyips(m_cluster_table[placement.cluster_id()].proxy_ip);
@@ -313,7 +357,7 @@ namespace ECProject
     int t_cluster_id = stripe->stripe_id % m_sys_config->ClusterNum;
 
     m_local_groups = ECProject::get_uniform_lrc_local_group(stripe->k, stripe->r, stripe->z);
-    m_clusters = ECProject::ECWide(stripe->k, stripe->r, stripe->z, m_local_groups); //implementation for ECWide
+    m_clusters = ECProject::ECWide(stripe->k, stripe->r, stripe->z, m_local_groups);
 
     for(int i = 0; i < m_clusters.size(); i++)
     {
@@ -378,7 +422,7 @@ namespace ECProject
     }
     stripe->num_groups = stripe->group_to_blocks.size();
   }
-  // implementation for shuffled uniform LRC
+
   void CoordinatorImpl::initialize_shuffled_uniform_lrc_stripe_placement(Stripe *stripe)
   {
     // range 0~k-1: data blocks
@@ -388,7 +432,7 @@ namespace ECProject
     // choose a cluster: round robin
     int t_cluster_id = stripe->stripe_id % m_sys_config->ClusterNum;
     m_local_groups = ECProject::get_shuffled_uniform_lrc_local_group(stripe->k, stripe->r, stripe->z);
-    m_clusters = ECProject::ECWide(stripe->k, stripe->r, stripe->z, m_local_groups);
+    m_clusters = ECProject::ECWide_optimal(stripe->k, stripe->r, stripe->z, m_local_groups);
     for(int i = 0; i < m_clusters.size(); i++)
     {
       for(int j = 0; j < m_clusters[i].size(); j++)
@@ -540,7 +584,7 @@ namespace ECProject
     return placement;
   }
 
-  std::vector<int> place_object_greedily(const int object_size, std::vector<int> &cur_cluster_capacity) {
+  std::vector<int> CoordinatorImpl::place_object_greedily(const int object_size, std::vector<int> &cur_cluster_capacity) {
     int M = cur_cluster_capacity.size();
     std::vector<int> placement(M, 0); // Record how many blocks are placed in each cluster
     
