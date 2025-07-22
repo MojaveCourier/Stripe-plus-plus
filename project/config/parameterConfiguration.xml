@@ -2,7 +2,8 @@
 <Configuration>
     <AlignedSize>4096</AlignedSize>
     <UnitSize>8192</UnitSize>
-    <BlockSize>65536</BlockSize>
+    <BlockSize>262144</BlockSize>
+    <!--65536-->
     <!--1048576-->
     <!--8388608-->
     <!--67108864-->
@@ -14,13 +15,13 @@
     <AppendMode>UNILRC_MODE</AppendMode>
     <alpha>2</alpha>
     <!-- LRC: UniLRC; AzureLRC; OptimalLRC; UniformLRC -->
-    <CodeType>ShuffledUniformLRC</CodeType>
+    <CodeType>UniformLRC</CodeType>
     <k>72</k>
     <r>4</r>
     <z>4</z>
-    <CodingMode>ReplicationMode</CodingMode>
+    <CodingMode>ElasticMode</CodingMode>
     <!--CodingMode: CacheMode, ReplicationMode, ElasticMode-->
-    <ObjectPlaceMode>GreedyPlacement</ObjectPlaceMode>
+    <ObjectPlaceMode>OrderedPlacement</ObjectPlaceMode>
     <!-- ObjectPlaceMode: OrderedPlacement, GreedyPlacement -->
     <!-- <CodeType>UniformLRC</CodeType>
     <k>30</k>

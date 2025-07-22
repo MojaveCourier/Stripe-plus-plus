@@ -70,6 +70,10 @@ namespace ECProject
         grpc::ServerContext *context,
         const coordinator_proto::KeyAndClientIP *keyClient,
         coordinator_proto::RepIfGetSuccess *getReplyClient) override;
+    grpc::Status getObject(
+        grpc::ServerContext *context,
+        const coordinator_proto::KeyAndClientIP *keyClient,
+        coordinator_proto::ReplyProxyIPsPorts *proxyIPPort) override;
     // get stripe
     grpc::Status getStripe(
         grpc::ServerContext *context,

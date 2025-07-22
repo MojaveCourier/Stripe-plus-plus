@@ -53,17 +53,22 @@ int main(int argc, char **argv)
     double block_size = static_cast<double> (parameters[3]) / 1024 / 1024; //MB
     int n = k + r + z;
     std::cout << "Start uploading..." << std::endl;
+    std::chrono::steady_clock::time_point start = std::chrono::steady_clock::now();
     for(int i = 0; i < 500; i++){
         std::string object_id = "object_" + std::to_string(i);
-        size_t object_size = k / 10 * 65536;
+        size_t object_size = k / 10 * block_size * 1024 * 1024;
         std::unique_ptr<char[]> data(new char[object_size]);
         std::cout << "Uploading object: " << object_id << " with size: " << object_size << std::endl;
-        bool res = client.upload_object_repmode(object_id, std::move(data), object_size);
+        bool res = client.upload_object(object_id, std::move(data), object_size);
         if (res) {
             std::cout << "Upload object " << object_id << " successfully!" << std::endl;
         } else {
             std::cout << "Failed to upload object " << object_id << std::endl;
         }
     }
+    std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
+    std::chrono::duration<double> elapsed_seconds = end - start;
+    std::cout << "Total time for uploading 500 objects: " << elapsed_seconds.count() << " seconds" << std::endl;
+    std::cout << "Average time per object: " << elapsed_seconds.count() / 500 << " seconds" << std::endl;
     return 0;
 }

@@ -39,6 +39,7 @@ service coordinatorService {
   rpc getStripe(KeyAndClientIP) returns (ReplyProxyIPsPorts) {};
 
   rpc getBlocks(BlockIDsAndClientIP) returns (ReplyProxyIPsPorts) {};
+  rpc getObject(KeyAndClientIP) returns (ReplyProxyIPsPorts) {};
 
   rpc getDegradedReadBlocks(BlockIDsAndClientIP) returns (ReplyProxyIPsPorts) {};
 

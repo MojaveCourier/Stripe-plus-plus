@@ -65,9 +65,6 @@ namespace ECProject
     }
 
     std::string sayHelloToCoordinatorByGrpc(std::string hello);
-    bool append(int append_size);
-    bool sub_append(int append_size);
-    bool sub_append_in_rep_mode(int append_size);
     bool set();
     bool sub_set(int block_num);
     std::shared_ptr<char[]> get_degraded_read_block(int stripe_id, int failed_block_id);
@@ -78,7 +75,6 @@ namespace ECProject
     std::vector<int> get_data_block_num_per_group(int k, int r, int z, std::string code_type);
     std::vector<int> get_global_parity_block_num_per_group(int k, int r, int z, std::string code_type);
     std::vector<int> get_local_parity_block_num_per_group(int k, int r, int z, std::string code_type);
-    bool set(std::string key, std::string value);
     bool SetParameterByGrpc(ECSchema input_ecschema);
     std::shared_ptr<char[]> get(std::string key, size_t &data_size);
     std::shared_ptr<char[]> get_blocks(int start_block_id, int end_block_id);
@@ -97,6 +93,7 @@ namespace ECProject
     bool decode_test(int stripe_id, int failed_block_id, std::string client_ip, int client_port, double &decode_time);
     bool upload_object(const std::string &object_id, std::unique_ptr<char[]> data, size_t data_size);
     bool upload_object_repmode(const std::string &object_id, std::unique_ptr<char[]> data, size_t data_size);
+    bool upload_object_cachemode(const std::string &object_id, std::unique_ptr<char[]> data, size_t data_size);
 
   private:
     std::unique_ptr<coordinator_proto::coordinatorService::Stub> m_coordinator_ptr;
