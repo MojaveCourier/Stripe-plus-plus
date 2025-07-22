@@ -58,7 +58,7 @@ int main(int argc, char **argv)
         size_t object_size = k / 10 * 65536;
         std::unique_ptr<char[]> data(new char[object_size]);
         std::cout << "Uploading object: " << object_id << " with size: " << object_size << std::endl;
-        bool res = client.upload_object(object_id, std::move(data), object_size);
+        bool res = client.upload_object_repmode(object_id, std::move(data), object_size);
         if (res) {
             std::cout << "Upload object " << object_id << " successfully!" << std::endl;
         } else {

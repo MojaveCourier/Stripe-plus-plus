@@ -140,10 +140,11 @@ namespace ECProject
     std::cout << "[INFO] Generated upload plan for object: " << object->object_key << std::endl;
     if(m_sys_config->CodingMode == "ReplicationMode"){
       for (size_t i = 0; i < cluster_ids.size(); i++) {
+        int cnt = 0;
         proxy_proto::AppendStripeDataPlacement placement;
         placement.set_cluster_id(cluster_ids[i]);
         placement.set_stripe_id(m_cur_stripe_id - 1);
-        placement.set_append_size(datanode_ids[i].size() * m_sys_config->BlockSize);
+        // placement.set_append_size(datanode_ids[i].size() * m_sys_config->BlockSize); // bugs
         placement.set_is_merge_parity(false);
         placement.set_append_mode("UNILRC_MODE");
         placement.set_is_serialized(false);
@@ -156,6 +157,7 @@ namespace ECProject
               placement.add_blockids(object->data_blocks[k]);
               placement.add_sizes(m_sys_config->BlockSize);
               placement.add_offsets(0); // Implementation for rep mode
+              cnt++;
             }
           }
           else{
@@ -165,9 +167,11 @@ namespace ECProject
             placement.add_blockids(block_ids[i][j]);
             placement.add_sizes(m_sys_config->BlockSize);
             placement.add_offsets(0); 
+            cnt++;
           }
 
         }
+        placement.set_append_size(cnt * m_sys_config->BlockSize);
         placement.set_stripe_id(stripe_id);
         upload_plan.push_back(placement);
       }
@@ -275,6 +279,9 @@ namespace ECProject
       for(int i = 0; i < placement.blockids_size(); i++) {
         proxyIPPort->add_block_ids(placement.blockids(i));
       }
+    }
+    for(int i = 0; i < m_object_table[objectID].data_blocks.size(); i++) {
+      proxyIPPort->add_data_block_ids(m_object_table[objectID].data_blocks[i]);
     }
     for (auto &thread : threads) {
         thread.join();

@@ -1483,6 +1483,7 @@ class ReplyProxyIPsPorts final :
     kClusterSliceSizesFieldNumber = 5,
     kGroupIdsFieldNumber = 6,
     kBlockIdsFieldNumber = 7,
+    kDataBlockIdsFieldNumber = 8,
     kSumAppendSizeFieldNumber = 1,
   };
   // repeated string append_keys = 2;
@@ -1621,6 +1622,28 @@ class ReplyProxyIPsPorts final :
   ::PROTOBUF_NAMESPACE_ID::RepeatedField< int32_t >*
       mutable_block_ids();
 
+  // repeated int32 data_block_ids = 8;
+  int data_block_ids_size() const;
+  private:
+  int _internal_data_block_ids_size() const;
+  public:
+  void clear_data_block_ids();
+  private:
+  int32_t _internal_data_block_ids(int index) const;
+  const ::PROTOBUF_NAMESPACE_ID::RepeatedField< int32_t >&
+      _internal_data_block_ids() const;
+  void _internal_add_data_block_ids(int32_t value);
+  ::PROTOBUF_NAMESPACE_ID::RepeatedField< int32_t >*
+      _internal_mutable_data_block_ids();
+  public:
+  int32_t data_block_ids(int index) const;
+  void set_data_block_ids(int index, int32_t value);
+  void add_data_block_ids(int32_t value);
+  const ::PROTOBUF_NAMESPACE_ID::RepeatedField< int32_t >&
+      data_block_ids() const;
+  ::PROTOBUF_NAMESPACE_ID::RepeatedField< int32_t >*
+      mutable_data_block_ids();
+
   // uint64 sum_append_size = 1;
   void clear_sum_append_size();
   uint64_t sum_append_size() const;
@@ -1648,6 +1671,8 @@ class ReplyProxyIPsPorts final :
     mutable std::atomic<int> _group_ids_cached_byte_size_;
     ::PROTOBUF_NAMESPACE_ID::RepeatedField< int32_t > block_ids_;
     mutable std::atomic<int> _block_ids_cached_byte_size_;
+    ::PROTOBUF_NAMESPACE_ID::RepeatedField< int32_t > data_block_ids_;
+    mutable std::atomic<int> _data_block_ids_cached_byte_size_;
     uint64_t sum_append_size_;
     mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
   };
@@ -4788,6 +4813,53 @@ inline ::PROTOBUF_NAMESPACE_ID::RepeatedField< int32_t >*
 ReplyProxyIPsPorts::mutable_block_ids() {
   // @@protoc_insertion_point(field_mutable_list:coordinator_proto.ReplyProxyIPsPorts.block_ids)
   return _internal_mutable_block_ids();
+}
+
+// repeated int32 data_block_ids = 8;
+inline int ReplyProxyIPsPorts::_internal_data_block_ids_size() const {
+  return _impl_.data_block_ids_.size();
+}
+inline int ReplyProxyIPsPorts::data_block_ids_size() const {
+  return _internal_data_block_ids_size();
+}
+inline void ReplyProxyIPsPorts::clear_data_block_ids() {
+  _impl_.data_block_ids_.Clear();
+}
+inline int32_t ReplyProxyIPsPorts::_internal_data_block_ids(int index) const {
+  return _impl_.data_block_ids_.Get(index);
+}
+inline int32_t ReplyProxyIPsPorts::data_block_ids(int index) const {
+  // @@protoc_insertion_point(field_get:coordinator_proto.ReplyProxyIPsPorts.data_block_ids)
+  return _internal_data_block_ids(index);
+}
+inline void ReplyProxyIPsPorts::set_data_block_ids(int index, int32_t value) {
+  _impl_.data_block_ids_.Set(index, value);
+  // @@protoc_insertion_point(field_set:coordinator_proto.ReplyProxyIPsPorts.data_block_ids)
+}
+inline void ReplyProxyIPsPorts::_internal_add_data_block_ids(int32_t value) {
+  _impl_.data_block_ids_.Add(value);
+}
+inline void ReplyProxyIPsPorts::add_data_block_ids(int32_t value) {
+  _internal_add_data_block_ids(value);
+  // @@protoc_insertion_point(field_add:coordinator_proto.ReplyProxyIPsPorts.data_block_ids)
+}
+inline const ::PROTOBUF_NAMESPACE_ID::RepeatedField< int32_t >&
+ReplyProxyIPsPorts::_internal_data_block_ids() const {
+  return _impl_.data_block_ids_;
+}
+inline const ::PROTOBUF_NAMESPACE_ID::RepeatedField< int32_t >&
+ReplyProxyIPsPorts::data_block_ids() const {
+  // @@protoc_insertion_point(field_list:coordinator_proto.ReplyProxyIPsPorts.data_block_ids)
+  return _internal_data_block_ids();
+}
+inline ::PROTOBUF_NAMESPACE_ID::RepeatedField< int32_t >*
+ReplyProxyIPsPorts::_internal_mutable_data_block_ids() {
+  return &_impl_.data_block_ids_;
+}
+inline ::PROTOBUF_NAMESPACE_ID::RepeatedField< int32_t >*
+ReplyProxyIPsPorts::mutable_data_block_ids() {
+  // @@protoc_insertion_point(field_mutable_list:coordinator_proto.ReplyProxyIPsPorts.data_block_ids)
+  return _internal_mutable_data_block_ids();
 }
 
 // -------------------------------------------------------------------

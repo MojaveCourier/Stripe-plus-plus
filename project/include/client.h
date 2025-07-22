@@ -96,6 +96,7 @@ namespace ECProject
     std::vector<int> get_parameters();
     bool decode_test(int stripe_id, int failed_block_id, std::string client_ip, int client_port, double &decode_time);
     bool upload_object(const std::string &object_id, std::unique_ptr<char[]> data, size_t data_size);
+    bool upload_object_repmode(const std::string &object_id, std::unique_ptr<char[]> data, size_t data_size);
 
   private:
     std::unique_ptr<coordinator_proto::coordinatorService::Stub> m_coordinator_ptr;
