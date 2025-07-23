@@ -2,7 +2,7 @@
 <Configuration>
     <AlignedSize>4096</AlignedSize>
     <UnitSize>8192</UnitSize>
-    <BlockSize>262144</BlockSize>
+    <BlockSize>1048576</BlockSize>
     <!--65536-->
     <!--1048576-->
     <!--8388608-->
@@ -19,20 +19,8 @@
     <k>72</k>
     <r>4</r>
     <z>4</z>
-    <CodingMode>ElasticMode</CodingMode>
+    <CodingMode>ReplicationMode</CodingMode>
     <!--CodingMode: CacheMode, ReplicationMode, ElasticMode-->
     <ObjectPlaceMode>OrderedPlacement</ObjectPlaceMode>
     <!-- ObjectPlaceMode: OrderedPlacement, GreedyPlacement -->
-    <!-- <CodeType>UniformLRC</CodeType>
-    <k>30</k>
-    <r>6</r>
-    <z>6</z> -->
-    <!-- <CodeType>OptimalLRC</CodeType>
-    <k>30</k>
-    <r>10</r>
-    <z>2</z> -->
-    <!-- <CodeType>AzureLRC</CodeType>
-    <k>30</k>
-    <r>6</r>
-    <z>6</z> -->
 </Configuration>

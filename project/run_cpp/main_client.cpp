@@ -82,10 +82,10 @@ int main(int argc, char **argv)
 
 
     std::cout << "Start uploading..." << std::endl;
-    std::chrono::steady_clock::time_point start = std::chrono::steady_clock::now();
-    for(int i = 0; i < 50; i++){
+    std::chrono::steady_clock::time_point upload_start = std::chrono::steady_clock::now();
+    for(int i = 0; i < 10; i++){
         std::string object_id = "object_" + std::to_string(i);
-        size_t object_size = k / 10 * block_size * 1024 * 1024;
+        size_t object_size = object_size_of_block_cnt[i] * block_size * 1024 * 1024;
         std::unique_ptr<char[]> data(new char[object_size]);
         std::cout << "Uploading object: " << object_id << " with size: " << object_size << std::endl;
         bool res = client.upload_object(object_id, std::move(data), object_size);
@@ -94,11 +94,29 @@ int main(int argc, char **argv)
         } else {
             std::cout << "Failed to upload object " << object_id << std::endl;
         }
+    }    
+    std::chrono::steady_clock::time_point upload_end = std::chrono::steady_clock::now();
+    std::chrono::duration<double> elapsed_seconds = upload_end - upload_start;
+    std::chrono::steady_clock::time_point get_start = std::chrono::steady_clock::now();
+    for(int i = 0; i < 10; i++){
+        std::string object_id = "object_" + std::to_string(i);
+        size_t object_size = object_size_of_block_cnt[i] * block_size * 1024 * 1024;
+        std::unique_ptr<char[]> data(new char[object_size]);
+        std::cout << "getting object: " << object_id << " with size: " << object_size << std::endl;
+        std::shared_ptr<char[]> retrieved_data = client.get_object(object_id, object_size_of_block_cnt[i]);
+        if(retrieved_data.get() != nullptr) {
+            std::cout << "Retrieved object " << object_id << " successfully!" << std::endl;
+        } else {
+            std::cout << "Failed to retrieve object " << object_id << std::endl;
+        }
     }
+    std::chrono::steady_clock::time_point get_end = std::chrono::steady_clock::now();
+    std::chrono::duration<double> get_elapsed_seconds = get_end - get_start;
+    double total_data_size = k * block_size; // total data size for 10 objects
+    std::cout << "Upload time: " << elapsed_seconds.count() << " seconds" << std::endl;
+    std::cout << "Upload throughput: " << total_data_size / elapsed_seconds.count() << " MB/s" << std::endl;
+    std::cout << "Get time: " << get_elapsed_seconds.count() << " seconds" << std::endl;
+    std::cout << "Get throughput: " << total_data_size / get_elapsed_seconds.count() << " MB/s" << std::endl;
 
-    std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
-    std::chrono::duration<double> elapsed_seconds = end - start;
-    std::cout << "Total time for uploading 500 objects: " << elapsed_seconds.count() << " seconds" << std::endl;
-    std::cout << "Average time per object: " << elapsed_seconds.count() / 500 << " seconds" << std::endl;
     return 0;
 }

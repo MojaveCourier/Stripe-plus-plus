@@ -541,278 +541,280 @@ namespace ECProject
   // upload an object, for stripe++
   bool Client::upload_object(const std::string &object_id, std::unique_ptr<char[]> data, size_t data_size)
   {
-    grpc::ClientContext context;
-    coordinator_proto::RequestProxyIPPort request;
-    coordinator_proto::ReplyProxyIPsPorts reply;
-    request.set_key(object_id);
-    request.set_valuesizebytes(data_size);
-    grpc::Status status;
-    status = m_coordinator_ptr->uploadObjectValue(&context, request, &reply);
-    if (!status.ok())
-    {
-      std::cout << "[UPLOAD_OBJECT] upload data failed!" << std::endl;
-      return false;
-    }
-    int cluster_num = reply.group_ids_size();
-    int block_num = reply.block_ids_size();
-    int parity_num = m_sys_config->r + m_sys_config->z;
-    std::unique_ptr<char[]> parity_blocks = std::make_unique<char[]>(parity_num * m_sys_config->BlockSize);
-    std::vector<int> object_to_data_blockids;
-    for(int i = 0; i < block_num; i++){
-      if(reply.block_ids(i) < m_sys_config->k)
-        object_to_data_blockids.push_back(reply.block_ids(i));
-    }
-    std::vector<int> block_cnt_for_each_cluster(cluster_num, 0);
-    for(int i = 0; i < reply.cluster_slice_sizes_size(); i++)
-    {
-      block_cnt_for_each_cluster[i] = reply.cluster_slice_sizes(i) / m_sys_config->BlockSize;
-    }
-    // split the data into blocks, partial encoding
-    std::vector<char *> data_ptr_array(data_size / m_sys_config->BlockSize);
-    std::vector<char *> parity_ptr_array(parity_num);
-    for(int i = 0; i < data_size / m_sys_config->BlockSize; i++){
-      data_ptr_array[i] = data.get() + i * m_sys_config->BlockSize; // data blocks
-    }
-    for(int i = 0; i < parity_num; i++){
-      parity_ptr_array[i] = parity_blocks.get() + i * m_sys_config->BlockSize;
-    }
-    if(m_sys_config -> CodeType == "ShuffledUniformLRC")
-      ECProject::partial_encode_shuffled_uniform_lrc(m_sys_config->k, m_sys_config->r, m_sys_config->z, object_to_data_blockids.size(), object_to_data_blockids, 
-        reinterpret_cast<unsigned char **>(data_ptr_array.data()), reinterpret_cast<unsigned char **>(parity_ptr_array.data()), m_sys_config->BlockSize);
-    else if(m_sys_config -> CodeType == "UniformLRC")
-      ECProject::partial_encode_uniform_lrc(m_sys_config->k, m_sys_config->r, m_sys_config->z, object_to_data_blockids.size(), object_to_data_blockids, 
-        reinterpret_cast<unsigned char **>(data_ptr_array.data()), reinterpret_cast<unsigned char **>(parity_ptr_array.data()), m_sys_config->BlockSize);
-    else{
-      std::cout << "Unsupported Code Type!" << std::endl;
-      return false;
-    }        
-    std::cout << "Encoding done" << std::endl;
-    // upload to proxies
-    std::vector<std::vector<int>> block_ids_for_each_proxy(cluster_num);
-    for(int i = 0, cur = 0; i < reply.group_ids_size(); i++){
-      for(int j = 0; j < block_cnt_for_each_cluster[i]; j++){
-        block_ids_for_each_proxy[i].push_back(reply.block_ids(cur++));
-      }
-    }
-    char *full_data_ptr[block_num];
-    std::unordered_map<int, int> block_id_to_ptr_offset;
-    for(int i = 0; i < block_num; i++){
-      if(reply.block_ids(i) >= m_sys_config->k)
+    std::string coding_mode = m_sys_config->CodingMode;
+    if(coding_mode == "ElasticMode"){
+      grpc::ClientContext context;
+      coordinator_proto::RequestProxyIPPort request;
+      coordinator_proto::ReplyProxyIPsPorts reply;
+      request.set_key(object_id);
+      request.set_valuesizebytes(data_size);
+      grpc::Status status;
+      status = m_coordinator_ptr->uploadObjectValue(&context, request, &reply);
+      if (!status.ok())
       {
-        full_data_ptr[i] = parity_blocks.get() + (reply.block_ids(i) - m_sys_config->k) * m_sys_config->BlockSize; // parity blocks
+        std::cout << "[UPLOAD_OBJECT] upload data failed!" << std::endl;
+        return false;
       }
+      int cluster_num = reply.group_ids_size();
+      int block_num = reply.block_ids_size();
+      int parity_num = m_sys_config->r + m_sys_config->z;
+      std::unique_ptr<char[]> parity_blocks = std::make_unique<char[]>(parity_num * m_sys_config->BlockSize);
+      std::vector<int> object_to_data_blockids;
+      for(int i = 0; i < block_num; i++){
+        if(reply.block_ids(i) < m_sys_config->k)
+          object_to_data_blockids.push_back(reply.block_ids(i));
+      }
+      std::vector<int> block_cnt_for_each_cluster(cluster_num, 0);
+      for(int i = 0; i < reply.cluster_slice_sizes_size(); i++)
+      {
+        block_cnt_for_each_cluster[i] = reply.cluster_slice_sizes(i) / m_sys_config->BlockSize;
+      }
+      // split the data into blocks, partial encoding
+      std::vector<char *> data_ptr_array(data_size / m_sys_config->BlockSize);
+      std::vector<char *> parity_ptr_array(parity_num);
+      for(int i = 0; i < data_size / m_sys_config->BlockSize; i++){
+        data_ptr_array[i] = data.get() + i * m_sys_config->BlockSize; // data blocks
+      }
+      for(int i = 0; i < parity_num; i++){
+        parity_ptr_array[i] = parity_blocks.get() + i * m_sys_config->BlockSize;
+      }
+      if(m_sys_config -> CodeType == "ShuffledUniformLRC")
+        ECProject::partial_encode_shuffled_uniform_lrc(m_sys_config->k, m_sys_config->r, m_sys_config->z, object_to_data_blockids.size(), object_to_data_blockids, 
+          reinterpret_cast<unsigned char **>(data_ptr_array.data()), reinterpret_cast<unsigned char **>(parity_ptr_array.data()), m_sys_config->BlockSize);
+      else if(m_sys_config -> CodeType == "UniformLRC")
+        ECProject::partial_encode_uniform_lrc(m_sys_config->k, m_sys_config->r, m_sys_config->z, object_to_data_blockids.size(), object_to_data_blockids, 
+          reinterpret_cast<unsigned char **>(data_ptr_array.data()), reinterpret_cast<unsigned char **>(parity_ptr_array.data()), m_sys_config->BlockSize);
       else{
-        full_data_ptr[i] = data.get() + i * m_sys_config->BlockSize; 
+        std::cout << "Unsupported Code Type!" << std::endl;
+        return false;
+      }        
+      std::cout << "Encoding done" << std::endl;
+      // upload to proxies
+      std::vector<std::vector<int>> block_ids_for_each_proxy(cluster_num);
+      for(int i = 0, cur = 0; i < reply.group_ids_size(); i++){
+        for(int j = 0; j < block_cnt_for_each_cluster[i]; j++){
+          block_ids_for_each_proxy[i].push_back(reply.block_ids(cur++));
+        }
       }
-      block_id_to_ptr_offset[reply.block_ids(i)] = i; // map the block id to the pointer offset
-    }
-    std::cout << "Connecting to proxies..." << std::endl;
-    // Implemetation: bugs below
-    std::vector<std::thread> upload_threads;
-    auto upload_func = [&](int cluster_id) {
-      asio::io_context io_context;
-      asio::error_code error;
-      asio::ip::tcp::resolver resolver(io_context);
-      asio::ip::tcp::resolver::results_type endpoints =
-          resolver.resolve(reply.proxyips(cluster_id), std::to_string(reply.proxyports(cluster_id))); //bug
-      asio::ip::tcp::socket sock_data(io_context);
-      asio::connect(sock_data, endpoints);
+      char *full_data_ptr[block_num];
+      std::unordered_map<int, int> block_id_to_ptr_offset;
+      for(int i = 0; i < block_num; i++){
+        if(reply.block_ids(i) >= m_sys_config->k)
+        {
+          full_data_ptr[i] = parity_blocks.get() + (reply.block_ids(i) - m_sys_config->k) * m_sys_config->BlockSize; // parity blocks
+        }
+        else{
+          full_data_ptr[i] = data.get() + i * m_sys_config->BlockSize; 
+        }
+        block_id_to_ptr_offset[reply.block_ids(i)] = i; // map the block id to the pointer offset
+      }
+      std::cout << "Connecting to proxies..." << std::endl;
+      // Implemetation: bugs below
+      std::vector<std::thread> upload_threads;
+      auto upload_func = [&](int cluster_id) {
+        asio::io_context io_context;
+        asio::error_code error;
+        asio::ip::tcp::resolver resolver(io_context);
+        asio::ip::tcp::resolver::results_type endpoints =
+            resolver.resolve(reply.proxyips(cluster_id), std::to_string(reply.proxyports(cluster_id))); //bug
+        asio::ip::tcp::socket sock_data(io_context);
+        asio::connect(sock_data, endpoints);
 
-      for (int block_id : block_ids_for_each_proxy[cluster_id])
+        for (int block_id : block_ids_for_each_proxy[cluster_id])
+        {
+          asio::write(sock_data, asio::buffer(full_data_ptr[block_id_to_ptr_offset[block_id]], m_sys_config->BlockSize), error);
+        }
+        sock_data.shutdown(asio::ip::tcp::socket::shutdown_send, error);
+        sock_data.close(error);
+      };
+      for (int i = 0; i < cluster_num; i++)
       {
-        asio::write(sock_data, asio::buffer(full_data_ptr[block_id_to_ptr_offset[block_id]], m_sys_config->BlockSize), error);
+        upload_threads.push_back(std::thread(upload_func, i));
       }
-      sock_data.shutdown(asio::ip::tcp::socket::shutdown_send, error);
-      sock_data.close(error);
-    };
-    for (int i = 0; i < cluster_num; i++)
-    {
-      upload_threads.push_back(std::thread(upload_func, i));
-    }
-    for (auto &thread : upload_threads)
-    {
-      thread.join();
-    }
-    std::cout << "Uploading Object done" << std::endl;
-    return status.ok();
-  }
-
-  bool Client::upload_object_repmode(const std::string &object_id, std::unique_ptr<char[]> data, size_t data_size)
-  {
-    grpc::ClientContext context;
-    coordinator_proto::RequestProxyIPPort request;
-    coordinator_proto::ReplyProxyIPsPorts reply;
-    request.set_key(object_id);
-    request.set_valuesizebytes(data_size);
-    grpc::Status status;
-    status = m_coordinator_ptr->uploadObjectValue(&context, request, &reply);
-    if (!status.ok())
-    {
-      std::cout << "[UPLOAD_OBJECT] upload data failed!" << std::endl;
-      return false;
-    }
-    int cluster_num = reply.group_ids_size();
-    std::vector<int> object_to_data_blockids;
-    std::unordered_map<int, int> block_id_to_ptr_offset;
-    for(int i = 0; i < reply.data_block_ids_size(); i++){
-        object_to_data_blockids.push_back(reply.data_block_ids(i));
-    }
-    std::vector<int> block_cnt_for_each_cluster(cluster_num, 0);
-    for(int i = 0; i < reply.cluster_slice_sizes_size(); i++)
-    {
-      block_cnt_for_each_cluster[i] = reply.cluster_slice_sizes(i) / m_sys_config->BlockSize;
-    }
-    // upload to proxies
-    std::vector<std::vector<int>> block_ids_for_each_proxy(cluster_num);
-    for(int i = 0, cur = 0; i < reply.group_ids_size(); i++){
-      for(int j = 0; j < block_cnt_for_each_cluster[i]; j++){
-        block_ids_for_each_proxy[i].push_back(reply.block_ids(cur++));
-      }
-    }
-    char *full_data_ptr[reply.data_block_ids_size()];
-
-    for(int i = 0; i < reply.data_block_ids_size(); i++){
-      full_data_ptr[i] = data.get() + i * m_sys_config->BlockSize; 
-      block_id_to_ptr_offset[reply.block_ids(i)] = i; // map the block id to the pointer offset
-    }
-    std::cout << "Connecting to proxies..." << std::endl;
-    // Implemetation: bugs below
-    std::vector<std::thread> upload_threads;
-    auto upload_func = [&](int cluster_id) {
-      asio::io_context io_context;
-      asio::error_code error;
-      asio::ip::tcp::resolver resolver(io_context);
-      asio::ip::tcp::resolver::results_type endpoints =
-          resolver.resolve(reply.proxyips(cluster_id), std::to_string(reply.proxyports(cluster_id))); //bug
-      asio::ip::tcp::socket sock_data(io_context);
-      asio::connect(sock_data, endpoints);
-
-      for (int block_id : block_ids_for_each_proxy[cluster_id])
+      for (auto &thread : upload_threads)
       {
-        asio::write(sock_data, asio::buffer(full_data_ptr[block_id_to_ptr_offset[block_id]], m_sys_config->BlockSize), error);
+        thread.join();
       }
-      sock_data.shutdown(asio::ip::tcp::socket::shutdown_send, error);
-      sock_data.close(error);
-    };
-    for (int i = 0; i < cluster_num; i++)
-    {
-      upload_threads.push_back(std::thread(upload_func, i));
+      std::cout << "Uploading Object done" << std::endl;
+      return status.ok();
     }
-    for (auto &thread : upload_threads)
-    {
-      thread.join();
-    }
-    std::cout << "Uploading Object done" << std::endl;
-    return status.ok();
-  }
-
-  bool Client::upload_object_cachemode(const std::string &object_id, std::unique_ptr<char[]> data, size_t data_size)
-  {
-    grpc::ClientContext context;
-    coordinator_proto::RequestProxyIPPort request;
-    coordinator_proto::ReplyProxyIPsPorts reply;
-    request.set_key(object_id);
-    request.set_valuesizebytes(data_size);
-    grpc::Status status;
-    status = m_coordinator_ptr->uploadObjectValue(&context, request, &reply);
-    if (!status.ok())
-    {
-      std::cout << "[UPLOAD_OBJECT] upload data failed!" << std::endl;
-      return false;
-    }
-    int cluster_num = reply.group_ids_size();
-    int block_num = reply.block_ids_size();
-    int parity_num = m_sys_config->r + m_sys_config->z;
-    std::unique_ptr<char[], decltype(&std::free)> parity_blocks(
-      static_cast<char*>(std::aligned_alloc(32, parity_num * m_sys_config->BlockSize)), 
-      &std::free
-    );
-    std::vector<int> object_to_data_blockids;
-    for(int i = 0; i < block_num; i++){
-      if(reply.block_ids(i) < m_sys_config->k)
-        object_to_data_blockids.push_back(reply.block_ids(i));
-    }
-    std::vector<int> block_cnt_for_each_cluster(cluster_num, 0);
-    for(int i = 0; i < reply.cluster_slice_sizes_size(); i++)
-    {
-      block_cnt_for_each_cluster[i] = reply.cluster_slice_sizes(i) / m_sys_config->BlockSize;
-    }
-    // split the data into blocks, partial encoding
-    std::vector<char *> data_ptr_array(data_size / m_sys_config->BlockSize);
-    std::vector<char *> parity_ptr_array(parity_num);
-    for(int i = 0; i < data_size / m_sys_config->BlockSize; i++){
-      data_ptr_array[i] = data.get() + i * m_sys_config->BlockSize; // data blocks
-    }
-    for(int i = 0; i < parity_num; i++){
-      parity_ptr_array[i] = parity_blocks.get() + i * m_sys_config->BlockSize;
-    }
-    if(m_sys_config -> CodeType == "ShuffledUniformLRC")
-      ECProject::partial_encode_shuffled_uniform_lrc(m_sys_config->k, m_sys_config->r, m_sys_config->z, object_to_data_blockids.size(), object_to_data_blockids, 
-        reinterpret_cast<unsigned char **>(data_ptr_array.data()), reinterpret_cast<unsigned char **>(parity_ptr_array.data()), m_sys_config->BlockSize);
-    else if(m_sys_config -> CodeType == "UniformLRC")
-      ECProject::partial_encode_uniform_lrc(m_sys_config->k, m_sys_config->r, m_sys_config->z, object_to_data_blockids.size(), object_to_data_blockids, 
-        reinterpret_cast<unsigned char **>(data_ptr_array.data()), reinterpret_cast<unsigned char **>(parity_ptr_array.data()), m_sys_config->BlockSize);
-    else{
-      std::cout << "Unsupported Code Type!" << std::endl;
-      return false;
-    }        
-    //implementation for cache XOR
-    char *parity_cache = static_cast<char*>(std::aligned_alloc(32, parity_num * m_sys_config->BlockSize));
-    memcpy(parity_cache, m_pre_allocated_buffer, parity_num * m_sys_config->BlockSize);
-    void *xor_vect[3] = {parity_cache, parity_blocks.get(), m_pre_allocated_buffer};
-    xor_avx(3, parity_num * m_sys_config->BlockSize, static_cast<void **>(xor_vect));
-    delete[] parity_cache;
-    std::cout << "Encoding done" << std::endl;
-    // upload to proxies
-    std::vector<std::vector<int>> block_ids_for_each_proxy(cluster_num);
-    for(int i = 0, cur = 0; i < reply.group_ids_size(); i++){
-      for(int j = 0; j < block_cnt_for_each_cluster[i]; j++){
-        block_ids_for_each_proxy[i].push_back(reply.block_ids(cur++));
-      }
-    }
-    char *full_data_ptr[block_num];
-    std::unordered_map<int, int> block_id_to_ptr_offset;
-    for(int i = 0; i < block_num; i++){
-      if(reply.block_ids(i) >= m_sys_config->k)
+    else if(coding_mode == "CacheMode"){
+      grpc::ClientContext context;
+      coordinator_proto::RequestProxyIPPort request;
+      coordinator_proto::ReplyProxyIPsPorts reply;
+      request.set_key(object_id);
+      request.set_valuesizebytes(data_size);
+      grpc::Status status;
+      status = m_coordinator_ptr->uploadObjectValue(&context, request, &reply);
+      if (!status.ok())
       {
-        full_data_ptr[i] = m_pre_allocated_buffer + (reply.block_ids(i) - m_sys_config->k) * m_sys_config->BlockSize; // parity blocks
+        std::cout << "[UPLOAD_OBJECT] upload data failed!" << std::endl;
+        return false;
       }
+      int cluster_num = reply.group_ids_size();
+      int block_num = reply.block_ids_size();
+      int parity_num = m_sys_config->r + m_sys_config->z;
+      std::unique_ptr<char[], decltype(&std::free)> parity_blocks(
+        static_cast<char*>(std::aligned_alloc(32, parity_num * m_sys_config->BlockSize)), 
+        &std::free
+      );
+      std::vector<int> object_to_data_blockids;
+      for(int i = 0; i < block_num; i++){
+        if(reply.block_ids(i) < m_sys_config->k)
+          object_to_data_blockids.push_back(reply.block_ids(i));
+      }
+      std::vector<int> block_cnt_for_each_cluster(cluster_num, 0);
+      for(int i = 0; i < reply.cluster_slice_sizes_size(); i++)
+      {
+        block_cnt_for_each_cluster[i] = reply.cluster_slice_sizes(i) / m_sys_config->BlockSize;
+      }
+      // split the data into blocks, partial encoding
+      std::vector<char *> data_ptr_array(data_size / m_sys_config->BlockSize);
+      std::vector<char *> parity_ptr_array(parity_num);
+      for(int i = 0; i < data_size / m_sys_config->BlockSize; i++){
+        data_ptr_array[i] = data.get() + i * m_sys_config->BlockSize; // data blocks
+      }
+      for(int i = 0; i < parity_num; i++){
+        parity_ptr_array[i] = parity_blocks.get() + i * m_sys_config->BlockSize;
+      }
+      if(m_sys_config -> CodeType == "ShuffledUniformLRC")
+        ECProject::partial_encode_shuffled_uniform_lrc(m_sys_config->k, m_sys_config->r, m_sys_config->z, object_to_data_blockids.size(), object_to_data_blockids, 
+          reinterpret_cast<unsigned char **>(data_ptr_array.data()), reinterpret_cast<unsigned char **>(parity_ptr_array.data()), m_sys_config->BlockSize);
+      else if(m_sys_config -> CodeType == "UniformLRC")
+        ECProject::partial_encode_uniform_lrc(m_sys_config->k, m_sys_config->r, m_sys_config->z, object_to_data_blockids.size(), object_to_data_blockids, 
+          reinterpret_cast<unsigned char **>(data_ptr_array.data()), reinterpret_cast<unsigned char **>(parity_ptr_array.data()), m_sys_config->BlockSize);
       else{
-        full_data_ptr[i] = data.get() + i * m_sys_config->BlockSize; 
+        std::cout << "Unsupported Code Type!" << std::endl;
+        return false;
+      }        
+      //implementation for cache XOR
+      char *parity_cache = static_cast<char*>(std::aligned_alloc(32, parity_num * m_sys_config->BlockSize));
+      memcpy(parity_cache, m_pre_allocated_buffer, parity_num * m_sys_config->BlockSize);
+      void *xor_vect[3] = {parity_cache, parity_blocks.get(), m_pre_allocated_buffer};
+      xor_avx(3, parity_num * m_sys_config->BlockSize, static_cast<void **>(xor_vect));
+      delete[] parity_cache;
+      std::cout << "Encoding done" << std::endl;
+      // upload to proxies
+      std::vector<std::vector<int>> block_ids_for_each_proxy(cluster_num);
+      for(int i = 0, cur = 0; i < reply.group_ids_size(); i++){
+        for(int j = 0; j < block_cnt_for_each_cluster[i]; j++){
+          block_ids_for_each_proxy[i].push_back(reply.block_ids(cur++));
+        }
       }
-      block_id_to_ptr_offset[reply.block_ids(i)] = i; // map the block id to the pointer offset
-    }
-    std::cout << "Connecting to proxies..." << std::endl;
-    // Implemetation: bugs below
-    std::vector<std::thread> upload_threads;
-    auto upload_func = [&](int cluster_id) {
-      asio::io_context io_context;
-      asio::error_code error;
-      asio::ip::tcp::resolver resolver(io_context);
-      asio::ip::tcp::resolver::results_type endpoints =
-          resolver.resolve(reply.proxyips(cluster_id), std::to_string(reply.proxyports(cluster_id))); //bug
-      asio::ip::tcp::socket sock_data(io_context);
-      asio::connect(sock_data, endpoints);
+      char *full_data_ptr[block_num];
+      std::unordered_map<int, int> block_id_to_ptr_offset;
+      for(int i = 0; i < block_num; i++){
+        if(reply.block_ids(i) >= m_sys_config->k)
+        {
+          full_data_ptr[i] = m_pre_allocated_buffer + (reply.block_ids(i) - m_sys_config->k) * m_sys_config->BlockSize; // parity blocks
+        }
+        else{
+          full_data_ptr[i] = data.get() + i * m_sys_config->BlockSize; 
+        }
+        block_id_to_ptr_offset[reply.block_ids(i)] = i; // map the block id to the pointer offset
+      }
+      std::cout << "Connecting to proxies..." << std::endl;
+      // Implemetation: bugs below
+      std::vector<std::thread> upload_threads;
+      auto upload_func = [&](int cluster_id) {
+        asio::io_context io_context;
+        asio::error_code error;
+        asio::ip::tcp::resolver resolver(io_context);
+        asio::ip::tcp::resolver::results_type endpoints =
+            resolver.resolve(reply.proxyips(cluster_id), std::to_string(reply.proxyports(cluster_id))); //bug
+        asio::ip::tcp::socket sock_data(io_context);
+        asio::connect(sock_data, endpoints);
 
-      for (int block_id : block_ids_for_each_proxy[cluster_id])
+        for (int block_id : block_ids_for_each_proxy[cluster_id])
+        {
+          asio::write(sock_data, asio::buffer(full_data_ptr[block_id_to_ptr_offset[block_id]], m_sys_config->BlockSize), error);
+        }
+        sock_data.shutdown(asio::ip::tcp::socket::shutdown_send, error);
+        sock_data.close(error);
+      };
+      for (int i = 0; i < cluster_num; i++)
       {
-        asio::write(sock_data, asio::buffer(full_data_ptr[block_id_to_ptr_offset[block_id]], m_sys_config->BlockSize), error);
+        upload_threads.push_back(std::thread(upload_func, i));
       }
-      sock_data.shutdown(asio::ip::tcp::socket::shutdown_send, error);
-      sock_data.close(error);
-    };
-    for (int i = 0; i < cluster_num; i++)
-    {
-      upload_threads.push_back(std::thread(upload_func, i));
+      for (auto &thread : upload_threads)
+      {
+        thread.join();
+      }
+      std::cout << "Uploading Object done" << std::endl;
+      return status.ok();
     }
-    for (auto &thread : upload_threads)
-    {
-      thread.join();
-    }
-    std::cout << "Uploading Object done" << std::endl;
-    return status.ok();
-  }  
+    else if(coding_mode == "ReplicationMode"){
+      grpc::ClientContext context;
+      coordinator_proto::RequestProxyIPPort request;
+      coordinator_proto::ReplyProxyIPsPorts reply;
+      request.set_key(object_id);
+      request.set_valuesizebytes(data_size);
+      grpc::Status status;
+      status = m_coordinator_ptr->uploadObjectValue(&context, request, &reply);
+      if (!status.ok())
+      {
+        std::cout << "[UPLOAD_OBJECT] upload data failed!" << std::endl;
+        return false;
+      }
+      int cluster_num = reply.group_ids_size();
+      std::vector<int> object_to_data_blockids;
+      std::unordered_map<int, int> block_id_to_ptr_offset;
+      for(int i = 0; i < reply.data_block_ids_size(); i++){
+          object_to_data_blockids.push_back(reply.data_block_ids(i));
+      }
+      std::vector<int> block_cnt_for_each_cluster(cluster_num, 0);
+      for(int i = 0; i < reply.cluster_slice_sizes_size(); i++)
+      {
+        block_cnt_for_each_cluster[i] = reply.cluster_slice_sizes(i) / m_sys_config->BlockSize;
+      }
+      // upload to proxies
+      std::vector<std::vector<int>> block_ids_for_each_proxy(cluster_num);
+      for(int i = 0, cur = 0; i < reply.group_ids_size(); i++){
+        for(int j = 0; j < block_cnt_for_each_cluster[i]; j++){
+          block_ids_for_each_proxy[i].push_back(reply.block_ids(cur++));
+        }
+      }
+      char *full_data_ptr[reply.data_block_ids_size()];
 
+      for(int i = 0; i < reply.data_block_ids_size(); i++){
+        full_data_ptr[i] = data.get() + i * m_sys_config->BlockSize; 
+        block_id_to_ptr_offset[reply.block_ids(i)] = i; // map the block id to the pointer offset
+      }
+      std::cout << "Connecting to proxies..." << std::endl;
+      // Implemetation: bugs below
+      std::vector<std::thread> upload_threads;
+      auto upload_func = [&](int cluster_id) {
+        asio::io_context io_context;
+        asio::error_code error;
+        asio::ip::tcp::resolver resolver(io_context);
+        asio::ip::tcp::resolver::results_type endpoints =
+            resolver.resolve(reply.proxyips(cluster_id), std::to_string(reply.proxyports(cluster_id))); //bug
+        asio::ip::tcp::socket sock_data(io_context);
+        asio::connect(sock_data, endpoints);
+
+        for (int block_id : block_ids_for_each_proxy[cluster_id])
+        {
+          asio::write(sock_data, asio::buffer(full_data_ptr[block_id_to_ptr_offset[block_id]], m_sys_config->BlockSize), error);
+        }
+        sock_data.shutdown(asio::ip::tcp::socket::shutdown_send, error);
+        sock_data.close(error);
+      };
+      for (int i = 0; i < cluster_num; i++)
+      {
+        upload_threads.push_back(std::thread(upload_func, i));
+      }
+      for (auto &thread : upload_threads)
+      {
+        thread.join();
+      }
+      std::cout << "Uploading Object done" << std::endl;
+      return status.ok();
+    }
+    else{
+      std::cout << "Unsupported Coding Mode!" << std::endl;
+      return false;
+    }
+  }
 
   // add a stripe each time
   bool Client::set()
@@ -1212,8 +1214,8 @@ namespace ECProject
         this->acceptor.accept(socket_data);
         uint32_t block_id;
         asio::read(socket_data, asio::buffer(&block_id, sizeof(uint32_t)));
-        asio::error_code error;
-        size_t len = asio::read(socket_data, asio::buffer(data_ptr_array_raw + block_id * static_cast<size_t>(block_size), block_size), error);
+        asio::error_code error; // implementation for order
+        size_t len = asio::read(socket_data, asio::buffer(data_ptr_array_raw + i * static_cast<size_t>(block_size), block_size), error);
         if(len != block_size)
         {
           std::cout << "[Client] get blocks failed!" << std::endl;
