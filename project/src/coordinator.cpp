@@ -1211,74 +1211,57 @@ namespace ECProject
     }
     else if (code_type == "UniformLRC")
     {
-      if (failed_block_id >= k + r)
-      {
-        int larger_local_group_num = (k + r) % z;
-        int local_group_id = failed_block_id - k - r;
-        int local_group_size = (k + r) / z;
-        int group_num_of_one_local_group = local_group_size / r + bool(local_group_size % r);
-        if (local_group_id + larger_local_group_num < z)
+      std::vector<std::vector<int>> local_groups = get_uniform_lrc_local_group(k, r, z);
+      std::vector<int> recovery_block_ids;
+      for(int i = 0; i < local_groups.size(); i++){
+        if(std::find(local_groups[i].begin(), local_groups[i].end(), failed_block_id) != local_groups[i].end())
         {
-          recovery_group_ids.push_back((local_group_id + 1) * group_num_of_one_local_group - 1);
-          for (int i = local_group_id * group_num_of_one_local_group; i < (local_group_id + 1) * group_num_of_one_local_group - 1; i++)
-          {
-            recovery_group_ids.push_back(i);
-          }
-        }
-        else
-        {
-          int smaller_local_group_num = z - larger_local_group_num;
-          int group_num_of_all_small_group = smaller_local_group_num * group_num_of_one_local_group;
-          local_group_size++;
-          group_num_of_one_local_group = local_group_size / r + (bool)(local_group_size % r);
-          local_group_id = local_group_id - smaller_local_group_num;
-          recovery_group_ids.push_back(group_num_of_all_small_group + (local_group_id + 1) * group_num_of_one_local_group - 1);
-          for (int i = group_num_of_all_small_group + local_group_id * group_num_of_one_local_group; i < group_num_of_all_small_group + (local_group_id + 1) * group_num_of_one_local_group - 1; i++)
-          {
-            recovery_group_ids.push_back(i);
-          }
+          recovery_block_ids = local_groups[i];
+          break;
         }
       }
-      else if (failed_block_id < k + r)
+      const std::vector<std::vector<int>> &groups = m_clusters;
+      for (int i = 0; i < groups.size(); i++)
       {
-        int larger_local_group_num = (k + r) % z;
-        int smaller_local_group_num = z - larger_local_group_num;
-        int local_group_size = (k + r) / z;
-        int group_num_of_one_local_group = local_group_size / r + bool(local_group_size % r);
-        int block_num_of_smaller_local_group = (z - larger_local_group_num) * local_group_size;
-        int group_num_of_smaller_local_group = smaller_local_group_num * group_num_of_one_local_group;
-        int local_group_id = 0;
-        if (failed_block_id < block_num_of_smaller_local_group)
+        for (int j = 0; j < recovery_block_ids.size(); j++)
         {
-          local_group_id = failed_block_id / local_group_size;
-          int block_num_in_previous_local_group = local_group_id * local_group_size;
-          int group_id = local_group_id * group_num_of_one_local_group + (failed_block_id - block_num_in_previous_local_group) / r;
-          recovery_group_ids.push_back(group_id);
-          for (int i = local_group_id * group_num_of_one_local_group; i < local_group_id * group_num_of_one_local_group + group_num_of_one_local_group; i++)
+          if (std::find(groups[i].begin(), groups[i].end(), recovery_block_ids[j]) != groups[i].end())
           {
-            if (i != group_id)
+            if( std::find(recovery_group_ids.begin(), recovery_group_ids.end(), i) == recovery_group_ids.end())
             {
               recovery_group_ids.push_back(i);
             }
-          }
-        }
-        else
-        {
-          local_group_size++;
-          group_num_of_one_local_group = local_group_size / r + bool(local_group_size % r);
-          local_group_id = (failed_block_id - block_num_of_smaller_local_group) / local_group_size;
-          int block_num_in_previous_local_group = local_group_id * local_group_size + block_num_of_smaller_local_group;
-          int group_id = local_group_id * group_num_of_one_local_group + (failed_block_id - block_num_in_previous_local_group) / r;
-          recovery_group_ids.push_back(group_id + group_num_of_smaller_local_group);
-          for (int i = local_group_id * group_num_of_one_local_group; i < local_group_id * group_num_of_one_local_group + group_num_of_one_local_group; i++)
-          {
-            if (i != group_id)
-            {
-              recovery_group_ids.push_back(i + group_num_of_smaller_local_group);
-            }
+            break;
           }
         }
       }
+    }
+    else if (code_type == "ShuffledUniformLRC")
+    {
+      std::vector<std::vector<int>> local_groups = get_shuffled_uniform_lrc_local_group(k, r, z);
+      std::vector<int> recovery_block_ids;
+      for(int i = 0; i < local_groups.size(); i++){
+        if(std::find(local_groups[i].begin(), local_groups[i].end(), failed_block_id) != local_groups[i].end())
+        {
+          recovery_block_ids = local_groups[i];
+          break;
+        }
+      }
+      const std::vector<std::vector<int>> &groups = m_clusters;
+      for (int i = 0; i < groups.size(); i++)
+      {
+        for (int j = 0; j < recovery_block_ids.size(); j++)
+        {
+          if (std::find(groups[i].begin(), groups[i].end(), recovery_block_ids[j]) != groups[i].end())
+          {
+            if( std::find(recovery_group_ids.begin(), recovery_group_ids.end(), i) == recovery_group_ids.end())
+            {
+              recovery_group_ids.push_back(i);
+            }
+            break;
+          }
+        }
+      }     
     }
 
     return recovery_group_ids;
@@ -2358,7 +2341,7 @@ namespace ECProject
     return true;
   }
 
-  bool CoordinatorImpl::degraded_read_one_block(int stripe_id, int failed_block_id, std::string client_ip, int client_port)
+  bool CoordinatorImpl::degraded_read_one_block(int stripe_id, int failed_block_id, std::string client_ip, int client_port) //implementation for stripe++
   {
     std::string code_type = m_sys_config->CodeType;
     Stripe &t_stripe = m_stripe_table[stripe_id];

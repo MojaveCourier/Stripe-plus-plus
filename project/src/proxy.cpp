@@ -1124,7 +1124,7 @@ namespace ECProject
     status[index] = GetFromDatanode(block_key, block_value, block_size, datanode_ip, datanode_port, disk_io_start_time, disk_io_end_time, network_start_time, network_end_time, grpc_notify_time, grpc_start_time);
   }
   // degraded read
-  grpc::Status ProxyImpl::degradedRead(
+  grpc::Status ProxyImpl::degradedRead( //implementation for stripe++
       grpc::ServerContext *context,
       const proxy_proto::DegradedReadRequest *degraded_read_request,
       proxy_proto::DegradedReadReply *response)
