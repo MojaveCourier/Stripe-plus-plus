@@ -79,6 +79,7 @@ namespace ECProject
     std::shared_ptr<char[]> get(std::string key, size_t &data_size);
     std::shared_ptr<char[]> get_blocks(int start_block_id, int end_block_id);
     std::shared_ptr<char[]> get_degraded_read_blocks(int start_block_id, int end_block_id);
+    std::shared_ptr<char[]> get_object(std::string key, int block_cnt);
     bool get(std::string key, std::string &value);
     bool delete_key(std::string key);
     bool delete_stripe(int stripe_id);

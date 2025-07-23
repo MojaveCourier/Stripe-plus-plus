@@ -52,9 +52,38 @@ int main(int argc, char **argv)
     }
     double block_size = static_cast<double> (parameters[3]) / 1024 / 1024; //MB
     int n = k + r + z;
+
+    int object_size_of_block_cnt_24[10] = {12, 3, 3, 4, 12, 3, 3, 2, 4, 2};
+    int object_size_of_block_cnt_48[10] = {10, 4, 2, 6, 11, 5, 1, 3, 2, 4};
+    int object_size_of_block_cnt_72[10] = {3, 18, 4, 4, 4, 5, 3, 20, 5, 6};
+    int object_size_of_block_cnt_96[10] = {5, 7, 4, 21, 7, 5, 9, 7, 7, 24};
+    int object_size_of_block_cnt[10];
+    if (k == 24)
+    {
+        std::copy(std::begin(object_size_of_block_cnt_24), std::end(object_size_of_block_cnt_24), std::begin(object_size_of_block_cnt));
+    }
+    else if (k == 48)
+    {
+        std::copy(std::begin(object_size_of_block_cnt_48), std::end(object_size_of_block_cnt_48), std::begin(object_size_of_block_cnt));
+    }
+    else if (k == 72)
+    {
+        std::copy(std::begin(object_size_of_block_cnt_72), std::end(object_size_of_block_cnt_72), std::begin(object_size_of_block_cnt));
+    }
+    else if (k == 96)
+    {
+        std::copy(std::begin(object_size_of_block_cnt_96), std::end(object_size_of_block_cnt_96), std::begin(object_size_of_block_cnt));
+    }
+    else
+    {
+        std::cout << "Unsupported k, r, z combination" << std::endl;
+        return -1;
+    }
+
+
     std::cout << "Start uploading..." << std::endl;
     std::chrono::steady_clock::time_point start = std::chrono::steady_clock::now();
-    for(int i = 0; i < 500; i++){
+    for(int i = 0; i < 50; i++){
         std::string object_id = "object_" + std::to_string(i);
         size_t object_size = k / 10 * block_size * 1024 * 1024;
         std::unique_ptr<char[]> data(new char[object_size]);
@@ -66,6 +95,7 @@ int main(int argc, char **argv)
             std::cout << "Failed to upload object " << object_id << std::endl;
         }
     }
+
     std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
     std::chrono::duration<double> elapsed_seconds = end - start;
     std::cout << "Total time for uploading 500 objects: " << elapsed_seconds.count() << " seconds" << std::endl;

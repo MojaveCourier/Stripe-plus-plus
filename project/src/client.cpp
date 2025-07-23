@@ -1178,6 +1178,65 @@ namespace ECProject
     
     return data_ptr_array;
   }
+
+  std::shared_ptr<char []> Client::get_object(std::string key, int block_cnt)
+  {
+    grpc::ClientContext context;
+    coordinator_proto::KeyAndClientIP request;
+    request.set_key(key);
+    request.set_clientip(m_clientIPForGet);
+    request.set_clientport(m_clientPortForGet);
+    int block_size = m_sys_config->BlockSize;
+    coordinator_proto::ReplyProxyIPsPorts reply;
+    bool is_get_blocks = false;
+    std::thread notify_thread([&context, &request, &reply, this, &is_get_blocks]() {
+      grpc::Status status;
+      status = m_coordinator_ptr->getObject(&context, request, &reply);
+      if (status.ok())
+      {
+        is_get_blocks = true;
+      }
+      else
+      {
+        std::cout << "[Client] get blocks failed!" << std::endl;
+      }
+    });
+    std::shared_ptr<char[]> data_ptr_array(new char[static_cast<size_t>(block_cnt) * m_sys_config->BlockSize]);
+    char * data_ptr_array_raw = data_ptr_array.get();
+    std::vector<std::thread> threads;
+    for(int i = 0; i < block_cnt; i++)
+    {
+      threads.push_back(std::thread(([this, &reply, i, data_ptr_array_raw, block_size]()mutable {
+        asio::io_context io_context;
+        asio::ip::tcp::socket socket_data(io_context);
+        this->acceptor.accept(socket_data);
+        uint32_t block_id;
+        asio::read(socket_data, asio::buffer(&block_id, sizeof(uint32_t)));
+        asio::error_code error;
+        size_t len = asio::read(socket_data, asio::buffer(data_ptr_array_raw + block_id * static_cast<size_t>(block_size), block_size), error);
+        if(len != block_size)
+        {
+          std::cout << "[Client] get blocks failed!" << std::endl;
+        }
+        asio::error_code ignore_ec;
+        socket_data.shutdown(asio::ip::tcp::socket::shutdown_receive, ignore_ec);
+        socket_data.close(ignore_ec);
+      })));
+    }
+    for(auto &thread : threads)
+    {
+      thread.join();
+    }
+    notify_thread.join();
+    if (!is_get_blocks)
+    {
+      std::cout << "[Client] get blocks failed!" << std::endl;
+      return nullptr;
+    }
+    //std::cout << "[Client] get blocks success!" << std::endl;
+    
+    return data_ptr_array;
+  }
   
   //for workload
   std::shared_ptr<char[]> Client::get_blocks(int start_block_id, int end_block_id)
