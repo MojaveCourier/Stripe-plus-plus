@@ -785,7 +785,7 @@ void ECProject::decode_optimal_lrc(const int k, const int r, const int z, const 
     delete[] g_tbls;
     delete[] res_ptr_ptr;
 }
-void ECProject::decode_uniform_lrc(const int k, const int r, const int z, const int block_num, // implementation for Stripe++
+void ECProject::decode_uniform_lrc(const int k, const int r, const int z, const int block_num, 
                                    const std::vector<int> *block_indexes, unsigned char **block_ptrs, unsigned char *res_ptr, int block_size, int failed_block_id)
 {
     memset(res_ptr, 0, block_size);
@@ -820,7 +820,6 @@ void ECProject::decode_uniform_lrc(const int k, const int r, const int z, const 
     delete[] g_tbls;
     delete[] res_ptr_ptr;
 }
-
 void
 ECProject::ec_encode_data_avx2(int len, int k, int rows, unsigned char *g_tbls, unsigned char **data,
                     unsigned char **coding)

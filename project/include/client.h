@@ -38,8 +38,8 @@ namespace ECProject
       m_clientID = ClientIP + ":" + std::to_string(ClientPort);
       m_sys_config = ECProject::Config::getInstance(config_path);
       m_toolbox = ECProject::ToolBox::getInstance();
-      m_pre_allocated_buffer = new char[static_cast<size_t> (m_sys_config->BlockSize) * static_cast<size_t> (m_sys_config->n)];
-      memset(m_pre_allocated_buffer, 0xaa, (m_sys_config->BlockSize) * static_cast<size_t> (m_sys_config->n));
+      m_pre_allocated_buffer = static_cast<char*>(std::aligned_alloc(32, static_cast<size_t>(m_sys_config->BlockSize) * static_cast<size_t>(m_sys_config->n)));
+      memset(m_pre_allocated_buffer, 0x00, (m_sys_config->BlockSize) * static_cast<size_t>(m_sys_config->n));
       if (m_sys_config->AppendMode == "CACHED_MODE")
       {
         m_cached_buffer = new char *[m_sys_config->r + m_sys_config->z];
