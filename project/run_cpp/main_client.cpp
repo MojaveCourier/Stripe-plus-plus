@@ -80,43 +80,75 @@ int main(int argc, char **argv)
         return -1;
     }
 
+    std::vector<double> write_spans;
+    std::vector<double> read_spans;
 
     std::cout << "Start uploading..." << std::endl;
-    std::chrono::steady_clock::time_point upload_start = std::chrono::steady_clock::now();
-    for(int i = 0; i < 10; i++){
-        std::string object_id = "object_" + std::to_string(i);
-        size_t object_size = object_size_of_block_cnt[i] * block_size * 1024 * 1024;
-        std::unique_ptr<char[]> data(new char[object_size]);
-        std::cout << "Uploading object: " << object_id << " with size: " << object_size << std::endl;
-        bool res = client.upload_object(object_id, std::move(data), object_size);
-        if (res) {
-            std::cout << "Upload object " << object_id << " successfully!" << std::endl;
-        } else {
-            std::cout << "Failed to upload object " << object_id << std::endl;
+    for(int j = 0; j < 5; j++){
+        std::chrono::steady_clock::time_point upload_start = std::chrono::steady_clock::now();
+        for(int i = 0; i < 10; i++){
+            std::string object_id = "object_" + std::to_string(j * 10 + i);
+            size_t object_size = object_size_of_block_cnt[i] * block_size * 1024 * 1024;
+            std::unique_ptr<char[]> data(new char[object_size]);
+            std::cout << "Uploading object: " << object_id << " with size: " << object_size << std::endl;
+            bool res = client.upload_object(object_id, std::move(data), object_size);
+            if (res) {
+                std::cout << "Upload object " << object_id << " successfully!" << std::endl;
+            } else {
+                std::cout << "Failed to upload object " << object_id << std::endl;
+            }
         }
-    }    
-    std::chrono::steady_clock::time_point upload_end = std::chrono::steady_clock::now();
-    std::chrono::duration<double> elapsed_seconds = upload_end - upload_start;
-    std::chrono::steady_clock::time_point get_start = std::chrono::steady_clock::now();
-    for(int i = 0; i < 10; i++){
-        std::string object_id = "object_" + std::to_string(i);
-        size_t object_size = object_size_of_block_cnt[i] * block_size * 1024 * 1024;
-        std::unique_ptr<char[]> data(new char[object_size]);
-        std::cout << "getting object: " << object_id << " with size: " << object_size << std::endl;
-        std::shared_ptr<char[]> retrieved_data = client.get_object(object_id, object_size_of_block_cnt[i]);
-        if(retrieved_data.get() != nullptr) {
-            std::cout << "Retrieved object " << object_id << " successfully!" << std::endl;
-        } else {
-            std::cout << "Failed to retrieve object " << object_id << std::endl;
-        }
+        std::chrono::steady_clock::time_point upload_end = std::chrono::steady_clock::now();
+        std::chrono::duration<double> elapsed_seconds = upload_end - upload_start;
+        write_spans.push_back(elapsed_seconds.count());
     }
-    std::chrono::steady_clock::time_point get_end = std::chrono::steady_clock::now();
-    std::chrono::duration<double> get_elapsed_seconds = get_end - get_start;
+
+    for(int j = 0; j < 5; j++){
+        std::chrono::steady_clock::time_point get_start = std::chrono::steady_clock::now();
+        for(int i = 0; i < 10; i++){
+            std::string object_id = "object_" + std::to_string(j * 10 + i);
+            size_t object_size = object_size_of_block_cnt[i] * block_size * 1024 * 1024;
+            std::unique_ptr<char[]> data(new char[object_size]);
+            std::cout << "getting object: " << object_id << " with size: " << object_size << std::endl;
+            std::shared_ptr<char[]> retrieved_data = client.get_object(object_id, object_size_of_block_cnt[i]);
+            if(retrieved_data.get() != nullptr) {
+                std::cout << "Retrieved object " << object_id << " successfully!" << std::endl;
+            } else {
+                std::cout << "Failed to retrieve object " << object_id << std::endl;
+            }
+        }
+        std::chrono::steady_clock::time_point get_end = std::chrono::steady_clock::now();
+        std::chrono::duration<double> get_elapsed_seconds = get_end - get_start;
+        read_spans.push_back(get_elapsed_seconds.count());
+    }
+    double avg_write_span = std::accumulate(write_spans.begin(), write_spans.end(), 0.0) / write_spans.size();
+    double avg_read_span = std::accumulate(read_spans.begin(), read_spans.end(), 0.0) / read_spans.size();
+    double max_write_span = *std::max_element(write_spans.begin(), write_spans.end());
+    double max_read_span = *std::max_element(read_spans.begin(), read_spans.end());
+    double min_write_span = *std::min_element(write_spans.begin(), write_spans.end());
+    double min_read_span = *std::min_element(read_spans.begin(), read_spans.end());
+    
+
     double total_data_size = k * block_size; // total data size for 10 objects
-    std::cout << "Upload time: " << elapsed_seconds.count() << " seconds" << std::endl;
-    std::cout << "Upload throughput: " << total_data_size / elapsed_seconds.count() << " MB/s" << std::endl;
-    std::cout << "Get time: " << get_elapsed_seconds.count() << " seconds" << std::endl;
-    std::cout << "Get throughput: " << total_data_size / get_elapsed_seconds.count() << " MB/s" << std::endl;
+    double avg_write_bandwidth = total_data_size / avg_write_span;
+    double avg_read_bandwidth = total_data_size / avg_read_span;
+    double max_write_bandwidth = total_data_size / min_write_span;
+    double max_read_bandwidth = total_data_size / min_read_span;
+    double min_write_bandwidth = total_data_size / max_write_span;
+    double min_read_bandwidth = total_data_size / max_read_span;
+
+    std::cout << "Average Write Span: " << avg_write_span << " seconds" << std::endl;
+    std::cout << "Max Write Span: " << max_write_span << " seconds" << std::endl;
+    std::cout << "Min Write Span: " << min_write_span << " seconds" << std::endl;
+    std::cout << "Average Write Throughput: " << avg_write_bandwidth << " MB/s" << std::endl;
+    std::cout << "Max Write Throughput: " << max_write_bandwidth << " MB/s" << std::endl;
+    std::cout << "Min Write Throughput: " << min_write_bandwidth << " MB/s" << std::endl;
+    std::cout << "Average Read Span: " << avg_read_span << " seconds" << std::endl;
+    std::cout << "Max Read Span: " << max_read_span << " seconds" << std::endl;
+    std::cout << "Min Read Span: " << min_read_span << " seconds" << std::endl;
+    std::cout << "Average Read Throughput: " << avg_read_bandwidth << " MB/s" << std::endl;
+    std::cout << "Max Read Throughput: " << max_read_bandwidth << " MB/s" << std::endl;
+    std::cout << "Min Read Throughput: " << min_read_bandwidth << " MB/s" << std::endl;
 
     return 0;
 }

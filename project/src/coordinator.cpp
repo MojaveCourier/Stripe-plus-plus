@@ -137,7 +137,6 @@ namespace ECProject
     std::vector<std::vector<std::string>> block_keys;
     std::vector<std::vector<int>> block_ids;
     get_object_cluster_datanode_block(object->object_key, object->cluster_num, cluster_ids, datanode_ids, block_keys, block_ids);
-    std::cout << "[INFO] Generated upload plan for object: " << object->object_key << std::endl;
     if(m_sys_config->CodingMode == "ReplicationMode"){
       for (size_t i = 0; i < cluster_ids.size(); i++) {
         int cnt = 0;
@@ -197,7 +196,6 @@ namespace ECProject
         upload_plan.push_back(placement);
       }
     }
-    std::cout << "[INFO] Upload plan generated with " << upload_plan.size() << " placements." << std::endl;
     return upload_plan;
   }
 
@@ -226,11 +224,11 @@ namespace ECProject
         initialize_shuffled_uniform_lrc_stripe_placement(&t_stripe);
       else
         throw std::runtime_error("Unsupported coding scheme: " + code_type);
-      print_stripe_data_placement(t_stripe);
       m_stripe_table[t_stripe.stripe_id] = std::move(t_stripe);
     }
     m_cur_stripe_capacity -= data_block_num;
     std::vector<int> object_placement; 
+    std::chrono::high_resolution_clock::time_point schedule_start_time = std::chrono::high_resolution_clock::now();
     if(m_sys_config->ObjectPlaceMode == "OrderedPlacement")
       object_placement = place_object_ordered(data_block_num, m_stripe_group_capacities);
     else if(m_sys_config->ObjectPlaceMode == "GreedyPlacement")
@@ -239,6 +237,9 @@ namespace ECProject
       std::cout << "Unsupported Object Placement Mode!" << std::endl;
       return grpc::Status(grpc::StatusCode::INVALID_ARGUMENT, "Unsupported Object Placement Mode");
     }
+    std::chrono::high_resolution_clock::time_point schedule_end_time = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double> schedule_duration = schedule_end_time - schedule_start_time;
+    std::cout << "Schedule time for " << objectID << ": " << schedule_duration.count() << std::endl;
     Object object;
     object.object_key = objectID;
     object.object_size = data_block_num;
@@ -265,11 +266,9 @@ namespace ECProject
       object.data_cluster_num += data_cluster_used;
     }
     m_object_table[objectID] = std::move(object);
-    std::cout << "[INFO] " << objectID << " placement done" << std::endl;
     // Implementation for rep mode
     std::vector<std::thread> threads;
     std::vector<proxy_proto::AppendStripeDataPlacement> upload_plan = generate_object_upload_plan(&m_object_table[objectID]); 
-    std::cout << "[INFO] upload plan generation done" << std::endl;
     for (const auto &placement : upload_plan) {
       threads.push_back(std::thread(&CoordinatorImpl::notify_proxies_ready, this, placement));
       proxyIPPort->add_group_ids(placement.cluster_id());
@@ -1486,11 +1485,7 @@ namespace ECProject
         stripe_block_ids[i].set_clientip(client_ip);
         stripe_block_ids[i].set_clientport(client_port);
         grpc::Status status = m_proxy_ptrs[m_cluster_table[unique_cluster_ids[i]].proxy_ip + ":" + std::to_string(m_cluster_table[unique_cluster_ids[i]].proxy_port)]->getBlocks(&cont, stripe_block_ids[i], &stripe_reply);
-        if (status.ok())
-        {
-          std::cout << "[GET OBJECT] getting object blocks from proxy " << m_cluster_table[unique_cluster_ids[i]].proxy_ip << ":" << m_cluster_table[unique_cluster_ids[i]].proxy_port << " succeeded!" << std::endl;
-        }
-        else
+        if (!status.ok())
         {
           std::cout << "[GET OBJECT] getting object blocks from proxy " << m_cluster_table[unique_cluster_ids[i]].proxy_ip << ":" << m_cluster_table[unique_cluster_ids[i]].proxy_port << " failed!" << std::endl;
         }

@@ -15,12 +15,12 @@
     <AppendMode>UNILRC_MODE</AppendMode>
     <alpha>2</alpha>
     <!-- LRC: UniLRC; AzureLRC; OptimalLRC; UniformLRC -->
-    <CodeType>UniformLRC</CodeType>
-    <k>72</k>
-    <r>4</r>
-    <z>4</z>
-    <CodingMode>ReplicationMode</CodingMode>
+    <CodeType>ShuffledUniformLRC</CodeType>
+    <k>24</k>
+    <r>2</r>
+    <z>2</z>
+    <CodingMode>ElasticMode</CodingMode>
     <!--CodingMode: CacheMode, ReplicationMode, ElasticMode-->
-    <ObjectPlaceMode>OrderedPlacement</ObjectPlaceMode>
+    <ObjectPlaceMode>GreedyPlacement</ObjectPlaceMode>
     <!-- ObjectPlaceMode: OrderedPlacement, GreedyPlacement -->
 </Configuration>
