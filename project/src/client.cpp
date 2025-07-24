@@ -817,7 +817,7 @@ namespace ECProject
   }
 
   // add a stripe each time
-  bool Client::set()
+  bool Client::set() // implementation for shuffled uniform lrc
   {
     grpc::ClientContext get_proxy_ip_port;
     coordinator_proto::RequestProxyIPPort request;

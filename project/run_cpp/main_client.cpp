@@ -79,7 +79,17 @@ int main(int argc, char **argv)
         std::cout << "Unsupported k, r, z combination" << std::endl;
         return -1;
     }
-
+    size_t object_size = k * block_size * 1024 * 1024;
+    std::unique_ptr<char[]> data(new char[object_size]);
+    client.upload_object("object_1", std::move(data), object_size);
+    sleep(1); // wait for the upload to complete
+    for(int i = 0; i < k; i++){
+        bool res = client.recovery(0, i);
+        if(!res){
+            std::cout << "Recovery Failed!" << std::endl;
+        }
+    }
+    /*
     std::vector<double> write_spans;
     std::vector<double> read_spans;
 
@@ -149,6 +159,6 @@ int main(int argc, char **argv)
     std::cout << "Average Read Throughput: " << avg_read_bandwidth << " MB/s" << std::endl;
     std::cout << "Max Read Throughput: " << max_read_bandwidth << " MB/s" << std::endl;
     std::cout << "Min Read Throughput: " << min_read_bandwidth << " MB/s" << std::endl;
-
+    */
     return 0;
 }

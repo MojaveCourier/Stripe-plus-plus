@@ -1647,7 +1647,7 @@ namespace ECProject
         exit(1);
       }
       if(cross_rack_num){
-        std::cout << "start to recover cross rack" << std::endl;
+        std::cout << "start to recovery cross rack, cross rack cnt: " << cross_rack_num << std::endl;
         char **cross_rack_bufs = new char*[cross_rack_num];
         for(int i = 0; i < cross_rack_num; i++)
         {
@@ -2033,7 +2033,7 @@ namespace ECProject
         }
 
         if(cross_rack_num){
-          std::cout << "start to recover cross rack" << std::endl;
+          std::cout << "start to recovery cross rack, cross rack cnt: " << cross_rack_num << std::endl;
           char **cross_rack_bufs = new char*[cross_rack_num];
           for(int i = 0; i < cross_rack_num; i++)
           {

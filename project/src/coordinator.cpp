@@ -228,7 +228,6 @@ namespace ECProject
     }
     m_cur_stripe_capacity -= data_block_num;
     std::vector<int> object_placement; 
-    std::chrono::high_resolution_clock::time_point schedule_start_time = std::chrono::high_resolution_clock::now();
     if(m_sys_config->ObjectPlaceMode == "OrderedPlacement")
       object_placement = place_object_ordered(data_block_num, m_stripe_group_capacities);
     else if(m_sys_config->ObjectPlaceMode == "GreedyPlacement")
@@ -237,9 +236,6 @@ namespace ECProject
       std::cout << "Unsupported Object Placement Mode!" << std::endl;
       return grpc::Status(grpc::StatusCode::INVALID_ARGUMENT, "Unsupported Object Placement Mode");
     }
-    std::chrono::high_resolution_clock::time_point schedule_end_time = std::chrono::high_resolution_clock::now();
-    std::chrono::duration<double> schedule_duration = schedule_end_time - schedule_start_time;
-    std::cout << "Schedule time for " << objectID << ": " << schedule_duration.count() << std::endl;
     Object object;
     object.object_key = objectID;
     object.object_size = data_block_num;
@@ -1208,7 +1204,7 @@ namespace ECProject
         recovery_group_ids.push_back(group_num - 1);
       }
     }
-    else if (code_type == "UniformLRC")
+    else if (code_type == "UniformLRC") //implementatin for bug fix
     {
       std::vector<std::vector<int>> local_groups = get_uniform_lrc_local_group(k, r, z);
       std::vector<int> recovery_block_ids;
