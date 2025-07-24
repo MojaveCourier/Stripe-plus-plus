@@ -208,6 +208,7 @@ namespace ECProject
     size_t objectSize = keyValueSize->valuesizebytes();
     std::string code_type = m_sys_config->CodeType;
     int data_block_num = objectSize / m_sys_config->BlockSize;
+    std::cout << "data block num: " << data_block_num << std::endl;
     if(m_cur_stripe_capacity < data_block_num) // Add a new stripe Implementation for Merge
     {
       m_cur_stripe_capacity = m_sys_config->k;
@@ -226,16 +227,26 @@ namespace ECProject
         throw std::runtime_error("Unsupported coding scheme: " + code_type);
       m_stripe_table[t_stripe.stripe_id] = std::move(t_stripe);
     }
+    std::cout << "Current group capacities: " << std::endl;
+    for(int i = 0; i < m_stripe_group_capacities.size(); i++){
+      std::cout << "Group " << i << " capacity: " << m_stripe_group_capacities[i] << std::endl;
+    }
     m_cur_stripe_capacity -= data_block_num;
-    std::vector<int> object_placement; 
-    if(m_sys_config->ObjectPlaceMode == "OrderedPlacement")
-      object_placement = place_object_ordered(data_block_num, m_stripe_group_capacities);
-    else if(m_sys_config->ObjectPlaceMode == "GreedyPlacement")
-      object_placement = place_object_greedily(data_block_num, m_stripe_group_capacities);
+    std::vector<int> object_placement;
+    std::chrono::high_resolution_clock::time_point start_time = std::chrono::high_resolution_clock::now();
+    if(m_sys_config->ObjectPlaceMode == "OrderedPlacement"){
+      object_placement = place_object_ordered(data_block_num);
+    }
+    else if(m_sys_config->ObjectPlaceMode == "GreedyPlacement"){
+      object_placement = place_object_greedily(data_block_num);
+    }
     else{
       std::cout << "Unsupported Object Placement Mode!" << std::endl;
       return grpc::Status(grpc::StatusCode::INVALID_ARGUMENT, "Unsupported Object Placement Mode");
     }
+    std::chrono::high_resolution_clock::time_point end_time = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double> schedule_time = end_time - start_time;
+    std::cout << "Schedule time for " << objectID << ": " << schedule_time.count() << std::endl;
     Object object;
     object.object_key = objectID;
     object.object_size = data_block_num;
@@ -262,7 +273,7 @@ namespace ECProject
       object.data_cluster_num += data_cluster_used;
     }
     m_object_table[objectID] = std::move(object);
-    // Implementation for rep mode
+
     std::vector<std::thread> threads;
     std::vector<proxy_proto::AppendStripeDataPlacement> upload_plan = generate_object_upload_plan(&m_object_table[objectID]); 
     for (const auto &placement : upload_plan) {
@@ -418,9 +429,10 @@ namespace ECProject
     {
       for(auto block : m_clusters[i]){
         if(block < m_sys_config->k){
-          m_stripe_group_capacities[i] ++;
+          m_stripe_group_capacities[i]++;
         }
       }
+      std::cout << "[Initialization] group " << i << " capacity: " << m_stripe_group_capacities[i] << std::endl;
     }
     stripe->num_groups = stripe->group_to_blocks.size();
   }
@@ -492,7 +504,7 @@ namespace ECProject
     {
       for(auto block : m_clusters[i]){
         if(block < m_sys_config->k){
-          m_stripe_group_capacities[i] ++;
+          m_stripe_group_capacities[i]++;
         }
       }
     }
@@ -567,16 +579,16 @@ namespace ECProject
     stripe->num_groups = stripe->group_to_blocks.size();
   }
 
-  std::vector<int> CoordinatorImpl::place_object_ordered(const int object_size, std::vector<int> &cur_cluster_capacity) {
-    std::vector<int> placement(cur_cluster_capacity.size(), 0);
+  std::vector<int> CoordinatorImpl::place_object_ordered(const int object_size) {
+    std::vector<int> placement(m_stripe_group_capacities.size(), 0);
     int remaining_size = object_size;
     while(remaining_size > 0) {
-        for (size_t i = 0; i < cur_cluster_capacity.size(); ++i) {
-            if (cur_cluster_capacity[i]) {
-                int place_size = std::min(cur_cluster_capacity[i], remaining_size);
+        for (size_t i = 0; i < m_stripe_group_capacities.size(); ++i) {
+            if (m_stripe_group_capacities[i]) {
+                int place_size = std::min(m_stripe_group_capacities[i], remaining_size);
                 remaining_size -= place_size;
                 placement[i] += place_size;
-                cur_cluster_capacity[i] -= place_size;
+                m_stripe_group_capacities[i] -= place_size;
                 if (remaining_size <= 0) {
                     break;
                 }
@@ -586,19 +598,22 @@ namespace ECProject
     return placement;
   }
 
-  std::vector<int> CoordinatorImpl::place_object_greedily(const int object_size, std::vector<int> &cur_cluster_capacity) {
-    int M = cur_cluster_capacity.size();
+  std::vector<int> CoordinatorImpl::place_object_greedily(const int object_size) {
+    for(int i = 0; i < m_stripe_group_capacities.size(); i++){
+      std::cout << m_stripe_group_capacities[i] << std::endl;
+    }
+    int M = m_stripe_group_capacities.size();
     std::vector<int> placement(M, 0); // Record how many blocks are placed in each cluster
     
     // Greedily place blocks in clusters with the most remaining capacity
-    for(int block = 0; block < object_size; ++block) {
+    for(int i = 0; i < object_size; i++) {
         int best_cluster_idx = -1;
-        int max_capacity = -1;
+        int max_capacity = 0;
         
         // Find the cluster with the maximum remaining capacity
-        for (int j = 0; j < M; ++j) {
-            if (placement[j] == 0 && cur_cluster_capacity[j] > max_capacity) {
-                max_capacity = cur_cluster_capacity[j];
+        for (int j = 0; j < M; j++) {
+            if (placement[j] == 0 && m_stripe_group_capacities[j] > max_capacity) {
+                max_capacity = m_stripe_group_capacities[j];
                 best_cluster_idx = j;
             }
         }
@@ -607,23 +622,23 @@ namespace ECProject
         if (best_cluster_idx == -1) {
             max_capacity = -1;
             for (int j = 0; j < M; ++j) {
-                if (cur_cluster_capacity[j] > max_capacity) {
-                    max_capacity = cur_cluster_capacity[j];
+                if (m_stripe_group_capacities[j] > max_capacity) {
+                    max_capacity = m_stripe_group_capacities[j];
                     best_cluster_idx = j;
                 }
             }
         }
         
         // Place the block in the best cluster found
-        if (best_cluster_idx != -1 && cur_cluster_capacity[best_cluster_idx] > 0) {
+        if (best_cluster_idx != -1 && m_stripe_group_capacities[best_cluster_idx] > 0) {
             placement[best_cluster_idx]++;
-            cur_cluster_capacity[best_cluster_idx]--;
+            m_stripe_group_capacities[best_cluster_idx]--;
         } else {
             // If no cluster can accommodate the block, we stop placing
+            std::cout << "No cluster can accommodate the block, stopping placement." << std::endl;
             break;
         }
     }
-    
     return placement;
   }
 

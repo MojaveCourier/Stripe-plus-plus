@@ -579,10 +579,12 @@ namespace ECProject
         // memset(append_buf, 0, cluster_append_size);
         // std::shared_ptr<char> append_buf_ptr(append_buf, [](char* p) { delete[] p; }); // 使用智能指针管理内存
         std::vector<char> append_buf(cluster_append_size, 0);
-        asio::read(socket_data, asio::buffer(append_buf.data(), cluster_append_size), error);
+        size_t bytes_received = 0;
+        bytes_received = asio::read(socket_data, asio::buffer(append_buf.data(), cluster_append_size), error);
         if (error == asio::error::eof)
         {
           std::cout << "error == asio::error::eof" << std::endl;
+          std::cout << "Expected Size" << cluster_append_size << " Received Size: " << bytes_received << std::endl;
         }
         else if (error)
         {

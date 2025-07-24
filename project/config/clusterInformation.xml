@@ -646,4 +646,72 @@
 			<datanode uri="10.10.1.21:17629" />
 		</datanodes>
 	</cluster>
+	<cluster id="19" proxy="10.10.1.22:50405">
+		<datanodes>
+			<datanode uri="10.10.1.22:17600" />
+			<datanode uri="10.10.1.22:17601" />
+			<datanode uri="10.10.1.22:17602" />
+			<datanode uri="10.10.1.22:17603" />
+			<datanode uri="10.10.1.22:17604" />
+			<datanode uri="10.10.1.22:17605" />
+			<datanode uri="10.10.1.22:17606" />
+			<datanode uri="10.10.1.22:17607" />
+			<datanode uri="10.10.1.22:17608" />
+			<datanode uri="10.10.1.22:17609" />
+			<datanode uri="10.10.1.22:17610" />
+			<datanode uri="10.10.1.22:17611" />
+			<datanode uri="10.10.1.22:17612" />
+			<datanode uri="10.10.1.22:17613" />
+			<datanode uri="10.10.1.22:17614" />
+			<datanode uri="10.10.1.22:17615" />
+			<datanode uri="10.10.1.22:17616" />
+			<datanode uri="10.10.1.22:17617" />
+			<datanode uri="10.10.1.22:17618" />
+			<datanode uri="10.10.1.22:17619" />
+			<datanode uri="10.10.1.22:17620" />
+			<datanode uri="10.10.1.22:17621" />
+			<datanode uri="10.10.1.22:17622" />
+			<datanode uri="10.10.1.22:17623" />
+			<datanode uri="10.10.1.22:17624" />
+			<datanode uri="10.10.1.22:17625" />
+			<datanode uri="10.10.1.22:17626" />
+			<datanode uri="10.10.1.22:17627" />
+			<datanode uri="10.10.1.22:17628" />
+			<datanode uri="10.10.1.22:17629" />
+		</datanodes>
+	</cluster>
+	<cluster id="20" proxy="10.10.1.23:50405">
+		<datanodes>
+			<datanode uri="10.10.1.23:17600" />
+			<datanode uri="10.10.1.23:17601" />
+			<datanode uri="10.10.1.23:17602" />
+			<datanode uri="10.10.1.23:17603" />
+			<datanode uri="10.10.1.23:17604" />
+			<datanode uri="10.10.1.23:17605" />
+			<datanode uri="10.10.1.23:17606" />
+			<datanode uri="10.10.1.23:17607" />
+			<datanode uri="10.10.1.23:17608" />
+			<datanode uri="10.10.1.23:17609" />
+			<datanode uri="10.10.1.23:17610" />
+			<datanode uri="10.10.1.23:17611" />
+			<datanode uri="10.10.1.23:17612" />
+			<datanode uri="10.10.1.23:17613" />
+			<datanode uri="10.10.1.23:17614" />
+			<datanode uri="10.10.1.23:17615" />
+			<datanode uri="10.10.1.23:17616" />
+			<datanode uri="10.10.1.23:17617" />
+			<datanode uri="10.10.1.23:17618" />
+			<datanode uri="10.10.1.23:17619" />
+			<datanode uri="10.10.1.23:17620" />
+			<datanode uri="10.10.1.23:17621" />
+			<datanode uri="10.10.1.23:17622" />
+			<datanode uri="10.10.1.23:17623" />
+			<datanode uri="10.10.1.23:17624" />
+			<datanode uri="10.10.1.23:17625" />
+			<datanode uri="10.10.1.23:17626" />
+			<datanode uri="10.10.1.23:17627" />
+			<datanode uri="10.10.1.23:17628" />
+			<datanode uri="10.10.1.23:17629" />
+		</datanodes>
+	</cluster>
 </clusters>

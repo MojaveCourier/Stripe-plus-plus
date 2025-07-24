@@ -557,12 +557,14 @@ namespace ECProject
       }
       int cluster_num = reply.group_ids_size();
       int block_num = reply.block_ids_size();
+      int data_block_num = reply.data_block_ids_size();
       int parity_num = m_sys_config->r + m_sys_config->z;
       std::unique_ptr<char[]> parity_blocks = std::make_unique<char[]>(parity_num * m_sys_config->BlockSize);
       std::vector<int> object_to_data_blockids;
-      for(int i = 0; i < block_num; i++){
-        if(reply.block_ids(i) < m_sys_config->k)
-          object_to_data_blockids.push_back(reply.block_ids(i));
+      std::unordered_map<int, int> data_block_id_to_index;
+      for(int i = 0; i < data_block_num; i++){
+        object_to_data_blockids.push_back(reply.data_block_ids(i));
+        data_block_id_to_index[reply.data_block_ids(i)] = i; // map the block id to the object ptr index
       }
       std::vector<int> block_cnt_for_each_cluster(cluster_num, 0);
       for(int i = 0; i < reply.cluster_slice_sizes_size(); i++)
@@ -604,19 +606,18 @@ namespace ECProject
           full_data_ptr[i] = parity_blocks.get() + (reply.block_ids(i) - m_sys_config->k) * m_sys_config->BlockSize; // parity blocks
         }
         else{
-          full_data_ptr[i] = data.get() + i * m_sys_config->BlockSize; 
+          full_data_ptr[i] = data.get() + data_block_id_to_index[reply.block_ids(i)] * m_sys_config->BlockSize; // data blocks
         }
         block_id_to_ptr_offset[reply.block_ids(i)] = i; // map the block id to the pointer offset
       }
       std::cout << "Connecting to proxies..." << std::endl;
-      // Implemetation: bugs below
       std::vector<std::thread> upload_threads;
       auto upload_func = [&](int cluster_id) {
         asio::io_context io_context;
         asio::error_code error;
         asio::ip::tcp::resolver resolver(io_context);
         asio::ip::tcp::resolver::results_type endpoints =
-            resolver.resolve(reply.proxyips(cluster_id), std::to_string(reply.proxyports(cluster_id))); //bug
+            resolver.resolve(reply.proxyips(cluster_id), std::to_string(reply.proxyports(cluster_id)));
         asio::ip::tcp::socket sock_data(io_context);
         asio::connect(sock_data, endpoints);
 
@@ -658,10 +659,12 @@ namespace ECProject
         static_cast<char*>(std::aligned_alloc(32, parity_num * m_sys_config->BlockSize)), 
         &std::free
       );
+      int data_block_num = reply.data_block_ids_size();
       std::vector<int> object_to_data_blockids;
-      for(int i = 0; i < block_num; i++){
-        if(reply.block_ids(i) < m_sys_config->k)
-          object_to_data_blockids.push_back(reply.block_ids(i));
+      std::unordered_map<int, int> data_block_id_to_index;
+      for(int i = 0; i < data_block_num; i++){
+        object_to_data_blockids.push_back(reply.data_block_ids(i));
+        data_block_id_to_index[reply.data_block_ids(i)] = i; // map the block id to the object ptr index
       }
       std::vector<int> block_cnt_for_each_cluster(cluster_num, 0);
       for(int i = 0; i < reply.cluster_slice_sizes_size(); i++)
@@ -709,19 +712,18 @@ namespace ECProject
           full_data_ptr[i] = m_pre_allocated_buffer + (reply.block_ids(i) - m_sys_config->k) * m_sys_config->BlockSize; // parity blocks
         }
         else{
-          full_data_ptr[i] = data.get() + i * m_sys_config->BlockSize; 
+          full_data_ptr[i] = data.get() + data_block_id_to_index[reply.block_ids(i)] * m_sys_config->BlockSize; // data blocks
         }
         block_id_to_ptr_offset[reply.block_ids(i)] = i; // map the block id to the pointer offset
       }
       std::cout << "Connecting to proxies..." << std::endl;
-      // Implemetation: bugs below
       std::vector<std::thread> upload_threads;
       auto upload_func = [&](int cluster_id) {
         asio::io_context io_context;
         asio::error_code error;
         asio::ip::tcp::resolver resolver(io_context);
         asio::ip::tcp::resolver::results_type endpoints =
-            resolver.resolve(reply.proxyips(cluster_id), std::to_string(reply.proxyports(cluster_id))); //bug
+            resolver.resolve(reply.proxyips(cluster_id), std::to_string(reply.proxyports(cluster_id)));
         asio::ip::tcp::socket sock_data(io_context);
         asio::connect(sock_data, endpoints);
 
@@ -758,9 +760,11 @@ namespace ECProject
       }
       int cluster_num = reply.group_ids_size();
       std::vector<int> object_to_data_blockids;
+      std::unordered_map<int, int> data_block_id_to_idx;
       std::unordered_map<int, int> block_id_to_ptr_offset;
       for(int i = 0; i < reply.data_block_ids_size(); i++){
           object_to_data_blockids.push_back(reply.data_block_ids(i));
+          data_block_id_to_idx[reply.data_block_ids(i)] = i; // map the block id to the index
       }
       std::vector<int> block_cnt_for_each_cluster(cluster_num, 0);
       for(int i = 0; i < reply.cluster_slice_sizes_size(); i++)
@@ -777,18 +781,17 @@ namespace ECProject
       char *full_data_ptr[reply.data_block_ids_size()];
 
       for(int i = 0; i < reply.data_block_ids_size(); i++){
-        full_data_ptr[i] = data.get() + i * m_sys_config->BlockSize; 
+        full_data_ptr[i] = data.get() + data_block_id_to_idx[reply.block_ids(i)] * m_sys_config->BlockSize; // data blocks
         block_id_to_ptr_offset[reply.block_ids(i)] = i; // map the block id to the pointer offset
       }
       std::cout << "Connecting to proxies..." << std::endl;
-      // Implemetation: bugs below
       std::vector<std::thread> upload_threads;
       auto upload_func = [&](int cluster_id) {
         asio::io_context io_context;
         asio::error_code error;
         asio::ip::tcp::resolver resolver(io_context);
         asio::ip::tcp::resolver::results_type endpoints =
-            resolver.resolve(reply.proxyips(cluster_id), std::to_string(reply.proxyports(cluster_id))); //bug
+            resolver.resolve(reply.proxyips(cluster_id), std::to_string(reply.proxyports(cluster_id)));
         asio::ip::tcp::socket sock_data(io_context);
         asio::connect(sock_data, endpoints);
 

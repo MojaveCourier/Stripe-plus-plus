@@ -144,8 +144,8 @@ namespace ECProject
     void initialize_uniform_lrc_stripe_placement(Stripe *stripe);
     void initialize_shuffled_uniform_lrc_stripe_placement(Stripe *stripe);
     void get_object_cluster_datanode_block(const std::string &object_id, const int &cluster_num, std::vector<int> &cluster_ids, std::vector<std::vector<int>> &datanode_ids, std::vector<std::vector<std::string>> &block_keys, std::vector<std::vector<int>> &block_ids);
-    std::vector<int> place_object_ordered(const int object_size, std::vector<int> &cur_cluster_capacity);
-    std::vector<int> place_object_greedily(const int object_size, std::vector<int> &cur_cluster_capacity);
+    std::vector<int> place_object_ordered(const int object_size);
+    std::vector<int> place_object_greedily(const int object_size);
     void add_to_map(std::map<int, std::vector<int>> &map, int key, int value);
     std::vector<proxy_proto::AppendStripeDataPlacement> generate_object_upload_plan(Object *object);
     std::vector<proxy_proto::AppendStripeDataPlacement> generate_add_plans(Stripe *stripe);
