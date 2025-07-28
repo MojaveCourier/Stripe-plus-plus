@@ -44,13 +44,8 @@ The architecture follows master-worker style, like many state-of-art distributed
   * `ClusterNum`: Total number of clusters in the system (12)
   * `CoordinatorIP`: IP address of the coordinator server (0.0.0.0)
   * `CoordinatorPort`: Port number for the coordinator server (55555)
-  * `AppendMode`: The mode for append operations, can be:
-    - REP_MODE: Replication mode
-    - UNILRC_MODE: Uniform LRC mode  
-    - CACHED_MODE: Cached mode
   * `alpha`: Parameter for coding (1)
   * `CodeType`: Type of erasure coding scheme, can be:
-    - UniLRC: UniLRC
     - AzureLRC: Azure LRC
     - OptimalLRC: Optimal LRC
     - UniformLRC: Uniform LRC

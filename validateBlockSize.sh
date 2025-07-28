@@ -37,7 +37,6 @@ stripe_num=15
 # r=7
 # z=5
 
-# unilrc
 k=30
 r=6
 z=6

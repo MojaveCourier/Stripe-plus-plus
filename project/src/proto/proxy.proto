@@ -20,20 +20,14 @@ package proxy_proto;
 service proxyService {
   // Sends a greeting
   rpc checkalive (CheckaliveCMD) returns (RequestResult);
-
-  // encode and set
-  rpc encodeAndSetObject(ObjectAndPlacement) returns (SetReply);
   // get and decode
   rpc decodeAndGetObject(ObjectAndPlacement) returns (GetReply);
   // degraded read
   rpc degradedRead(DegradedReadRequest) returns (DegradedReadReply);
   rpc degradedRead2Client(RecoveryRequest) returns (DegradedReadReply);
-  rpc degradedReadBreakdown(DegradedReadRequest) returns (DegradedReadReply);
-  rpc degradedRead2ClientBreakdown(RecoveryRequest) returns (DegradedReadReply);
   rpc degradedReadWithBlockStripeID(DegradedReadRequest) returns (GetReply);
   // recovery
   rpc recovery(RecoveryRequest) returns (RecoveryReply);
-  rpc recoveryBreakdown(RecoveryRequest) returns (RecoveryReply);
   rpc multipleRecovery(MultipleRecoveryRequest) returns (GetReply);
   // delete
   rpc deleteBlock(NodeAndBlock) returns (DelReply);

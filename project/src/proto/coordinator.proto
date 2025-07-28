@@ -34,24 +34,16 @@ service coordinatorService {
   // append
   rpc uploadAppendValue (RequestProxyIPPort) returns (ReplyProxyIPsPorts) {};
   // get
-  rpc getValue(KeyAndClientIP) returns (RepIfGetSuccess) {};
-
   rpc getStripe(KeyAndClientIP) returns (ReplyProxyIPsPorts) {};
-
   rpc getBlocks(BlockIDsAndClientIP) returns (ReplyProxyIPsPorts) {};
   rpc getObject(KeyAndClientIP) returns (ReplyProxyIPsPorts) {};
 
-  rpc getDegradedReadBlocks(BlockIDsAndClientIP) returns (ReplyProxyIPsPorts) {};
-
   // degraded read
   rpc getDegradedReadBlock(KeyAndClientIP) returns (DegradedReadReply) {};
-  rpc getDegradedReadBlockBreakdown(KeyAndClientIP) returns (DegradedReadReply) {};
   // recovery
   rpc getRecovery(KeyAndClientIP) returns (RecoveryReply) {};
-  rpc getRecoveryBreakdown(KeyAndClientIP) returns (RecoveryReply) {};
   rpc fullNodeRecovery(NodeIdFromClient) returns (RepBlockNum) {};
   // delete
-  rpc delByKey(KeyFromClient) returns (RepIfDeling) {};
   rpc delByStripe(StripeIdFromClient) returns (RepIfDeling) {};
 
   //other

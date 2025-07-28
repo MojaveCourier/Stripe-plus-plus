@@ -30,10 +30,8 @@ service datanodeService {
   rpc handleMergeParityWithRep(MergeParityInfo) returns(RequestResult);
   // recovery
   rpc handleRecovery(MergeParityInfo) returns(RequestResult);
-  rpc handleRecoveryBreakdown(MergeParityInfo) returns(RequestResult);
   // get
   rpc handleGet(GetInfo) returns(RequestResult);
-  rpc handleGetBreakdown(GetInfo) returns(RequestResult);
   // delete
   rpc handleDelete(DelInfo) returns(RequestResult);
 }

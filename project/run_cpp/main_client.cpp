@@ -10,6 +10,7 @@
 #include <chrono>
 #include <algorithm>
 #include <random>
+#include <ec_encoder.h>
 
 int main(int argc, char **argv)
 {
@@ -52,7 +53,6 @@ int main(int argc, char **argv)
     }
     double block_size = static_cast<double> (parameters[3]) / 1024 / 1024; //MB
     int n = k + r + z;
-
     int object_size_of_block_cnt_24[10] = {6, 2, 1, 1, 4, 2, 1, 1, 2, 4};
     int object_size_of_block_cnt_48[10] = {10, 4, 2, 6, 11, 5, 1, 3, 2, 4};
     int object_size_of_block_cnt_72[10] = {3, 18, 4, 4, 4, 5, 3, 20, 5, 6};
@@ -82,6 +82,7 @@ int main(int argc, char **argv)
     size_t object_size = k * parameters[3];
 
     /*
+    // for recovery test
     std::vector<double> recovery_times;
     std::unique_ptr<char[]> data(new char[object_size]);
     client.upload_object("object_1", std::move(data), object_size);
@@ -105,7 +106,8 @@ int main(int argc, char **argv)
     */
     
     
-    std::vector<double> write_spans;
+    /*std::vector<double> write_spans;
+    // for write test
     double total_data_size = k * block_size; // total data size for 10 objects
     std::cout << "Start uploading..." << std::endl;
     for(int j = 0; j < 5; j++){
@@ -138,8 +140,10 @@ int main(int argc, char **argv)
     std::cout << "Average Write Throughput: " << avg_write_bandwidth << " MB/s" << std::endl;
     std::cout << "Max Write Throughput: " << max_write_bandwidth << " MB/s" << std::endl;
     std::cout << "Min Write Throughput: " << min_write_bandwidth << " MB/s" << std::endl;
-    
+    */
+   
     /*
+    // for read test
     std::vector<double> read_spans;
     for(int j = 0; j < 5; j++){
         std::chrono::steady_clock::time_point get_start = std::chrono::steady_clock::now();
@@ -174,6 +178,52 @@ int main(int argc, char **argv)
     std::cout << "Max Read Throughput: " << max_read_bandwidth << " MB/s" << std::endl;
     std::cout << "Min Read Throughput: " << min_read_bandwidth << " MB/s" << std::endl;
     */
-    
+
+    /*
+    // for IBM workload
+    int cur_read_id = 0;
+    int cur_write_id = 0;
+    std::string load_trace_path =  std::string(buff) + cwf.substr(1, cwf.rfind('/') - 1) + "/../../../trace/IBM_put_post.txt";
+    std::fstream load_trace_file(load_trace_path);
+    std::string load_trace_line;
+    std::vector<double> work_time;
+    while(std::getline(load_trace_file, load_trace_line)){
+        std::string operation;
+        int file_block_cnt;
+        std::istringstream iss(load_trace_line);
+        std::getline(iss, operation, ' ');
+        iss >> file_block_cnt;
+        if(operation != "REST.PUT.OBJECT" ){
+            std::cout << "Unsupported operation: " << operation << std::endl;
+            return -1;
+        }
+        std::string object_key = "object_" + std::to_string(cur_write_id++);
+        size_t file_size = file_block_cnt * block_size * 1024 * 1024; // MB to bytes
+        std::unique_ptr<char[]> data(new char[file_size]);
+        std::cout << "Uploading object: " << object_key << " with size: " << file_block_cnt * block_size << " MB" << std::endl;
+        std::chrono::steady_clock::time_point upload_start = std::chrono::steady_clock::now();
+        bool res = client.upload_object(object_key, std::move(data), file_block_cnt * block_size * 1024 * 1024);
+        std::chrono::steady_clock::time_point upload_end = std::chrono::steady_clock::now();
+        std::chrono::duration<double> upload_duration = upload_end - upload_start;
+        work_time.push_back(upload_duration.count());
+        if (res) {
+            std::cout << "Upload object " << object_key << " successfully!" << std::endl;
+        } else {
+            std::cout << "Failed to upload object " << object_key << std::endl;
+            return -1;
+        }
+    }
+    std::string output_path = std::string(buff) + cwf.substr(1, cwf.rfind('/') - 1) + "/../../../IBM_work_output.txt";
+    std::ofstream output_file(output_path);
+    if (!output_file.is_open()) {
+        std::cerr << "Failed to open output file: " << output_path << std::endl;
+        return -1;
+    }
+    for (const auto &time : work_time) {
+        output_file << std::fixed << std::setprecision(6) << time << std::endl;
+    }
+    output_file.close();
+    std::cout << "Work time output saved to: " << output_path << std::endl;
+    */        
     return 0;
 }

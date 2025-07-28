@@ -5,7 +5,6 @@
 #include "datanode.grpc.pb.h"
 #include "devcommon.h"
 #include "meta_definition.h"
-#include "lrc.h"
 #include <asio.hpp>
 #include <grpc++/health_check_service_interface.h>
 #include <grpcpp/ext/proto_server_reflection_plugin.h>
@@ -38,35 +37,17 @@ namespace ECProject
         grpc::ServerContext *context,
         const proxy_proto::CheckaliveCMD *request,
         proxy_proto::RequestResult *response) override;
-    // encode and set
-    grpc::Status encodeAndSetObject(
-        grpc::ServerContext *context,
-        const proxy_proto::ObjectAndPlacement *object_and_placement,
-        proxy_proto::SetReply *response) override;
     // append
     grpc::Status scheduleAppend2Datanode(
         grpc::ServerContext *context,
         const proxy_proto::AppendStripeDataPlacement *append_stripe_data_placement,
         proxy_proto::SetReply *response) override;
-    // decode and get
-    grpc::Status decodeAndGetObject(
-        grpc::ServerContext *context,
-        const proxy_proto::ObjectAndPlacement *object_and_placement,
-        proxy_proto::GetReply *response) override;
     // degraded read
     grpc::Status degradedRead(
         grpc::ServerContext *context,
         const proxy_proto::DegradedReadRequest *degraded_read_request,
         proxy_proto::DegradedReadReply *response) override;
     grpc::Status degradedRead2Client(
-      grpc::ServerContext *context,
-      const proxy_proto::RecoveryRequest *recovery_request,
-      proxy_proto::DegradedReadReply *response) override;
-    grpc::Status degradedReadBreakdown(
-      grpc::ServerContext *context,
-      const proxy_proto::DegradedReadRequest *degraded_read_request,
-      proxy_proto::DegradedReadReply *response) override;
-    grpc::Status degradedRead2ClientBreakdown(
       grpc::ServerContext *context,
       const proxy_proto::RecoveryRequest *recovery_request,
       proxy_proto::DegradedReadReply *response) override;
@@ -79,11 +60,6 @@ namespace ECProject
         grpc::ServerContext *context,
         const proxy_proto::RecoveryRequest *recovery_request,
         proxy_proto::RecoveryReply *response) override;
-    grpc::Status recoveryBreakdown(
-        grpc::ServerContext *context,
-        const proxy_proto::RecoveryRequest *recovery_request,
-        proxy_proto::RecoveryReply *response) override;
-
     grpc::Status multipleRecovery(
         grpc::ServerContext *context,
         const proxy_proto::MultipleRecoveryRequest *multiple_recovery_request,
@@ -93,7 +69,7 @@ namespace ECProject
         grpc::ServerContext *context,
         const proxy_proto::NodeAndBlock *node_and_block,
         proxy_proto::DelReply *response) override;
-    // get stripe
+    // get
     grpc::Status getBlocks(
         grpc::ServerContext *context,
         const proxy_proto::StripeAndBlockIDs *request,
@@ -111,14 +87,8 @@ namespace ECProject
     void printAppendStripeDataPlacement(const proxy_proto::AppendStripeDataPlacement *append_stripe_data_placement);
     std::vector<unsigned char *> convertToUnsignedCharArray(std::vector<char*> &input);
     bool GetFromDatanode(const std::string &key, char *value, const size_t value_length, const char *ip, const int port);
-    bool GetFromDatanode(const std::string &key, char *value, const size_t value_length, const char *ip, const int port, 
-      double *disk_io_start_time, double *disk_io_end_time, double *network_start_time, double *network_end_time, double *grpc_notify_time, double *grpc_start_time);
     bool RecoveryToDatanode(const char *block_key, int block_id, const char *buf, const char *ip, int port);
-    bool RecoveryToDatanodeBreakdown(const char *block_key, int block_id, const char *buf, const char *ip, int port, double *network_time, double *disk_io_time);
     void get_from_node(const std::string &block_key, char *block_value, const size_t block_size, const char *datanode_ip, const int datanode_port, bool *status, int index);
-    void get_from_node_breakdown(const std::string &block_key, char *block_value, const size_t block_size, const char *datanode_ip, const int datanode_port, bool *status, int index, 
-      double *disk_io_start_time, double *disk_io_end_time, double *network_start_time, double *network_end_time, double *grpc_notify_time, double *grpc_start_time);
-
   private:
     std::mutex m_mutex;
     std::condition_variable cv;

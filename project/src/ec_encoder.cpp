@@ -1,4 +1,4 @@
-#include "unilrc_encoder.h"
+#include "ec_encoder.h"
 #include <iostream>
 #include <unordered_map>
 
@@ -431,6 +431,44 @@ void ECProject::encode_uniform_lrc(int k, int r, int z, unsigned char **data_ptr
     delete[] encode_matrix;
     delete[] local_vector;
     delete[] g_tbls;
+}
+
+void ECProject::encode_one_parity_block_uniform_lrc(int k, int r, int z, int parity_id, unsigned char **data_ptrs, unsigned char *parity_ptr, int block_size)
+{
+    memset(parity_ptr, 0, block_size);
+    int m = k + r;
+    unsigned char *encode_matrix = new unsigned char[(m + z) * k];
+    memset(encode_matrix, 0, (m + z) * k);
+    gf_gen_cauchy_matrix1(encode_matrix, m, k);
+
+    unsigned char *local_vector = new unsigned char[k];
+    gf_gen_local_vector(local_vector, k, r);
+    std::vector<std::vector<int>> local_groups = get_uniform_lrc_local_group(k, r, z);
+    for(int i = 0; i < z; i++){
+        int group_size = local_groups[i].size();
+        for(int j = 0; j < group_size; j++){
+            if(local_groups[i][j] < k){
+                encode_matrix[(m + i) * k + j] ^= local_vector[j];
+            }
+            else{
+                for(int l = 0; l < k; l++){
+                    encode_matrix[(m + i) * k + l] ^= encode_matrix[local_groups[i][j] * k + l];
+                }
+            }
+        }
+    }
+    unsigned char *sub_matrix = new unsigned char[k];
+    for (int i = 0; i < k; i++) {
+        sub_matrix[i] = encode_matrix[(k + parity_id) * k + i];
+    }
+    unsigned char *g_tbls = new unsigned char[k * 32];
+    ec_init_tables(k, 1, sub_matrix, g_tbls);
+    ec_encode_data_avx2(block_size, 
+                        k,                // data_block_num
+                        1,                // r + z
+                        g_tbls, 
+                        data_ptrs,       // data_ptrs
+                        &parity_ptr);    // parity_ptr
 }
 
 void ECProject::partial_encode_uniform_lrc(int k, int r, int z, int data_block_num, unsigned char **data_ptrs, unsigned char **parity_ptrs, int block_size)
@@ -1013,7 +1051,7 @@ ECProject::ECWide(int k, int r, int z, std::vector<std::vector<int>> local_group
     std::vector<std::vector<int>> clusters;
     
     for(int i = 0; i < local_group.size(); i++){
-        // 分离数据块和校验块
+        // Separate data blocks and parity blocks
         std::vector<int> data_blocks;
         std::vector<int> parity_blocks;
         
@@ -1025,39 +1063,39 @@ ECProject::ECWide(int k, int r, int z, std::vector<std::vector<int>> local_group
             }
         }
         
-        // 添加额外的全局校验块
+        // Add additional global parity blocks
         parity_blocks.push_back(k + r + i);
         
-        // 计算需要的cluster数量
+        // Calculate the number of clusters needed
         int total_blocks = data_blocks.size() + parity_blocks.size();
-        int cluster_num = (total_blocks + cluster_capacity - 1) / cluster_capacity; // 向上取整
+        int cluster_num = (total_blocks + cluster_capacity - 1) / cluster_capacity; // Round up
         
         std::vector<std::vector<int>> cur_clusters(cluster_num);
         
-        // 优先策略：尽可能将校验块放在一起
+        // Priority strategy: try to place parity blocks together as much as possible
         int cluster_idx = 0;
         int parity_idx = 0;
         
-        // 第一步：尽可能将校验块填满前面的cluster
+        // Step 1: fill the front clusters with parity blocks as much as possible
         while(parity_idx < parity_blocks.size() && cluster_idx < cluster_num) {
-            // 在当前cluster中尽可能多地放置校验块
+            // Place as many parity blocks as possible in the current cluster
             while(cur_clusters[cluster_idx].size() < cluster_capacity && parity_idx < parity_blocks.size()) {
                 cur_clusters[cluster_idx].push_back(parity_blocks[parity_idx]);
                 parity_idx++;
             }
             
-            // 如果当前cluster已满或校验块已分配完，移到下一个cluster
+            // If current cluster is full or parity blocks are exhausted, move to next cluster
             if(cur_clusters[cluster_idx].size() == cluster_capacity || parity_idx >= parity_blocks.size()) {
                 cluster_idx++;
             }
         }
         
-        // 第二步：在有剩余空间的cluster中填充数据块
+        // Step 2: fill data blocks in clusters with remaining space
         int data_idx = 0;
-        cluster_idx = 0; // 重新从第一个cluster开始
+        cluster_idx = 0; // Start from the first cluster again
         
         while(data_idx < data_blocks.size() && cluster_idx < cluster_num) {
-            // 在当前cluster中尽可能多地放置数据块
+            // Place as many data blocks as possible in the current cluster
             while(cur_clusters[cluster_idx].size() < cluster_capacity && data_idx < data_blocks.size()) {
                 cur_clusters[cluster_idx].push_back(data_blocks[data_idx]);
                 data_idx++;
@@ -1065,7 +1103,7 @@ ECProject::ECWide(int k, int r, int z, std::vector<std::vector<int>> local_group
             cluster_idx++;
         }
         
-        // 将当前local group的所有cluster添加到总集合中
+        // Add all clusters of current local group to the total collection
         for(int j = 0; j < cluster_num; j++){
             clusters.push_back(cur_clusters[j]);
         }
@@ -1080,7 +1118,7 @@ std::vector<std::vector<int>> ECProject::ECWide_optimal(int k, int r, int z, std
     std::vector<std::vector<int>> clusters;
     
     for(int i = 0; i < local_group.size(); i++){
-        // 分离数据块和校验块
+        // Separate data blocks and parity blocks
         std::vector<int> data_blocks;
         std::vector<int> parity_blocks;
         
@@ -1092,25 +1130,25 @@ std::vector<std::vector<int>> ECProject::ECWide_optimal(int k, int r, int z, std
             }
         }
         
-        // 添加额外的全局校验块
+        // Add additional global parity blocks
         parity_blocks.push_back(k + r + i);
         
-        // 计算需要的cluster数量
+        // Calculate the number of clusters needed
         int total_blocks = data_blocks.size() + parity_blocks.size();
-        int cluster_num = (total_blocks + cluster_capacity - 1) / cluster_capacity; // 向上取整
+        int cluster_num = (total_blocks + cluster_capacity - 1) / cluster_capacity; // Round up
         
         std::vector<std::vector<int>> cur_clusters(cluster_num);
         
-        // 首先平均分配校验块到各个cluster
+        // First, distribute parity blocks evenly across clusters
         for(int j = 0; j < parity_blocks.size(); j++){
-            int target_cluster = j % cluster_num; // 轮询分配校验块
+            int target_cluster = j % cluster_num; // Round-robin allocation of parity blocks
             cur_clusters[target_cluster].push_back(parity_blocks[j]);
         }
         
-        // 然后分配数据块，优先填充容量较少的cluster
+        // Then allocate data blocks, prioritizing clusters with less capacity
         int data_idx = 0;
         while(data_idx < data_blocks.size()){
-            // 找到当前容量最小的cluster
+            // Find the cluster with minimum current capacity
             int min_size = cluster_capacity + 1;
             int target_cluster = -1;
             
@@ -1121,17 +1159,17 @@ std::vector<std::vector<int>> ECProject::ECWide_optimal(int k, int r, int z, std
                 }
             }
             
-            // 如果找到合适的cluster，添加数据块
+            // If a suitable cluster is found, add the data block
             if(target_cluster != -1){
                 cur_clusters[target_cluster].push_back(data_blocks[data_idx]);
                 data_idx++;
             } else {
-                // 所有cluster都已满，跳出循环
+                // All clusters are full, break the loop
                 break;
             }
         }
         
-        // 将当前local group的所有cluster添加到总集合中
+        // Add all clusters of current local group to the total collection
         for(int j = 0; j < cluster_num; j++){
             clusters.push_back(cur_clusters[j]);
         }

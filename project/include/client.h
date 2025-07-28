@@ -66,10 +66,7 @@ namespace ECProject
 
     std::string sayHelloToCoordinatorByGrpc(std::string hello);
     bool set();
-    bool sub_set(int block_num);
     std::shared_ptr<char[]> get_degraded_read_block(int stripe_id, int failed_block_id);
-    std::shared_ptr<char[]> get_degraded_read_block_breakdown(int stripe_id, int failed_block_id, double &total_time, double &disk_io_time, double &network_time, double &encode_time);
-    bool recovery_breakdown(int stripe_id, int failed_block_id, double &disk_read_time, double &network_time, double &decode_time, double &disk_write_time);
     bool recovery(int stripe_id, int failed_block_id);
     int recovery_full_node(int node_id);
     std::vector<int> get_data_block_num_per_group(int k, int r, int z, std::string code_type);
@@ -78,10 +75,7 @@ namespace ECProject
     bool SetParameterByGrpc(ECSchema input_ecschema);
     std::shared_ptr<char[]> get(std::string key, size_t &data_size);
     std::shared_ptr<char[]> get_blocks(int start_block_id, int end_block_id);
-    std::shared_ptr<char[]> get_degraded_read_blocks(int start_block_id, int end_block_id);
     std::shared_ptr<char[]> get_object(std::string key, int block_cnt);
-    bool get(std::string key, std::string &value);
-    bool delete_key(std::string key);
     bool delete_stripe(int stripe_id);
     bool delete_all_stripes();
     int get_append_slice_plans(std::string append_mode, int curr_logical_offset, int append_size, std::vector<std::vector<int>> *node_slice_sizes_per_cluster, std::vector<int> *modified_data_block_nums_per_cluster, std::vector<int> *data_ptr_size_array, int &parity_slice_size, int &parity_slice_offset);
