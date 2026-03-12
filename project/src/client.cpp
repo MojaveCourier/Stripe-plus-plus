@@ -64,82 +64,6 @@ namespace ECProject
     }
   }
 
-  int Client::get_append_slice_plans(const int curr_logical_offset, const int append_size, std::vector<std::vector<int>> *node_slice_sizes_per_cluster, std::vector<int> *modified_data_block_nums_per_cluster, std::vector<int> *data_ptr_size_array, int &parity_slice_size, int &parity_slice_offset)
-  {
-    assert(node_slice_sizes_per_cluster->size() == m_sys_config->z);
-    assert(modified_data_block_nums_per_cluster->size() == m_sys_config->z);
-
-    int unit_size = m_sys_config->UnitSize;
-    int num_unit_stripes = (curr_logical_offset + append_size - 1) / (unit_size * m_sys_config->k) - curr_logical_offset / (unit_size * m_sys_config->k) + 1;
-    int curr_block_id = (curr_logical_offset / unit_size) % m_sys_config->k;
-    int start_data_block_id = curr_block_id;
-
-    parity_slice_size = num_unit_stripes * unit_size;
-    parity_slice_offset = curr_logical_offset / (unit_size * m_sys_config->k) * unit_size;
-
-    std::map<int, int> block_to_slice_sizes;
-    int tmp_size = append_size;
-    int tmp_offset = curr_logical_offset;
-
-    while (tmp_size > 0)
-    {
-      int sub_slice_size = unit_size;
-      // first slice
-      if (tmp_size == append_size && curr_logical_offset % unit_size != 0)
-      {
-        sub_slice_size = std::min(unit_size - curr_logical_offset % unit_size, append_size);
-      }
-      else
-      {
-        sub_slice_size = std::min(unit_size, tmp_size);
-      }
-      if (block_to_slice_sizes.find(curr_block_id) == block_to_slice_sizes.end())
-      {
-        block_to_slice_sizes[curr_block_id] = sub_slice_size;
-      }
-      else
-      {
-        block_to_slice_sizes[curr_block_id] += sub_slice_size;
-      }
-      curr_block_id = (curr_block_id + 1) % m_sys_config->k;
-      tmp_size -= sub_slice_size;
-      tmp_offset += sub_slice_size;
-    }
-
-    for (int i = m_sys_config->k; i < m_sys_config->n; i++)
-    {
-      block_to_slice_sizes[i] = parity_slice_size;
-    }
-
-    for (int i = 0; i < m_sys_config->z; i++)
-    {
-      for (int j = i * m_sys_config->k / m_sys_config->z;
-           j < (i + 1) * m_sys_config->k / m_sys_config->z; j++)
-      {
-        if (block_to_slice_sizes.find(j) != block_to_slice_sizes.end())
-        {
-          node_slice_sizes_per_cluster->at(i).push_back(block_to_slice_sizes[j]);
-          modified_data_block_nums_per_cluster->at(i)++;
-          data_ptr_size_array->push_back(block_to_slice_sizes[j]);
-        }
-      }
-
-      for (int j = m_sys_config->k + i * m_sys_config->r / m_sys_config->z;
-           j < m_sys_config->k + (i + 1) * m_sys_config->r / m_sys_config->z; j++)
-      {
-        node_slice_sizes_per_cluster->at(i).push_back(block_to_slice_sizes[j]);
-      }
-
-      for (int j = m_sys_config->k + m_sys_config->r + i * m_sys_config->z / m_sys_config->z;
-           j < m_sys_config->k + m_sys_config->r + (i + 1) * m_sys_config->z / m_sys_config->z; j++)
-      {
-        node_slice_sizes_per_cluster->at(i).push_back(block_to_slice_sizes[j]);
-      }
-    }
-
-    return start_data_block_id;
-  }
-
   void Client::split_for_append_data_and_parity(const coordinator_proto::ReplyProxyIPsPorts *reply_proxy_ips_ports, const std::vector<char *> &cluster_slice_data, const std::vector<std::vector<int>> &node_slice_sizes_per_cluster, const std::vector<int> &modified_data_block_nums_per_cluster, std::vector<char *> &data_ptr_array, std::vector<char *> &global_parity_ptr_array, std::vector<char *> &local_parity_ptr_array)
   {
     for (int i = 0; i < cluster_slice_data.size(); i++)
@@ -1045,7 +969,7 @@ namespace ECProject
     }
     else if(m_sys_config->CodeType == "ShuffledUniformLRC")
     {
-      parameters.push_back(4);
+      parameters.push_back(3);
     }
     else
     {

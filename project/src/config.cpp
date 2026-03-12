@@ -15,7 +15,6 @@ namespace ECProject
 
   void Config::validateConfig() const
   {
-    assert(BlockSize % UnitSize == 0 && "Error: BlockSize must be divisible by UnitSize");
     assert((CodeType == "AzureLRC" || CodeType == "OptimalLRC" || CodeType == "UniformLRC" || CodeType == "ShuffledUniformLRC") && "Error: CodeType must be AzureLRC, OptimalLRC, or UniformLRC");
     assert(DatanodeNumPerCluster > 0 && "Error: DatanodeNumPerCluster must be greater than 0");
     assert(ClusterNum > 0 && "Error: ClusterNum must be greater than 0");
@@ -61,10 +60,6 @@ namespace ECProject
       return;
     }
 
-    if (auto elem = root->FirstChildElement("AlignedSize"))
-      AlignedSize = std::stoi(elem->GetText());
-    if (auto elem = root->FirstChildElement("UnitSize"))
-      UnitSize = std::stoi(elem->GetText());
     if (auto elem = root->FirstChildElement("BlockSize"))
       BlockSize = std::stoi(elem->GetText());
     if (auto elem = root->FirstChildElement("z"))
@@ -94,8 +89,6 @@ namespace ECProject
   void Config::printConfigs() const
   {
     std::cout << "Configuration Parameters:" << std::endl;
-    std::cout << "  AlignedSize: " << AlignedSize << " bytes" << std::endl;
-    std::cout << "  UnitSize: " << UnitSize << " bytes" << std::endl;
     std::cout << "  BlockSize: " << BlockSize << " bytes" << std::endl;
     std::cout << "  alpha: " << (int)alpha << std::endl;
     std::cout << "  z: " << (int)z << std::endl;

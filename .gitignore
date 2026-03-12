@@ -7,7 +7,6 @@ third_party/gf-complete
 third_party/grpc
 third_party/jerasure
 storage/*
-!storage/.gitkeep
 data/*
 project/config/*
 small_tools/*

@@ -20,8 +20,6 @@ namespace ECProject
     void printConfigs() const;
     void validateConfig() const;
 
-    int AlignedSize = 4096;
-    int UnitSize = 8 * 1024;
     unsigned int BlockSize = 1024 * 1024;
     int alpha = 2;
     int z = 2;
