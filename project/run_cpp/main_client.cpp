@@ -81,6 +81,43 @@ int main(int argc, char **argv)
     }
     size_t object_size = k * parameters[3];
 
+    // for full stripe read test
+    std::vector<double> read_spans;
+    
+    for(int i = 0; i < 5; i++){
+        
+        std::string object_id = std::to_string(i);
+        std::unique_ptr<char[]> data(new char[object_size]);
+        std::cout << "uploading object: " << object_id << " with size: " << object_size << std::endl;
+        bool res = client.upload_object(object_id, std::move(data), object_size);
+        if (res) {
+            std::cout << "Upload object " << object_id << " successfully!" << std::endl;
+        } else {
+            std::cout << "Failed to upload object " << object_id << std::endl;
+        }
+    }
+
+    sleep(1);
+    for(int i = 0; i < 5; i++){
+        std::string object_id = std::to_string(i);
+        std::chrono::steady_clock::time_point read_start = std::chrono::steady_clock::now();
+        std::shared_ptr<char[]> data = client.get_object(object_id, k);
+        //std::shared_ptr<char[]> data = client.get(object_id, object_size);
+        if (data.get() != nullptr) {
+            std::cout << "Get object " << object_id << " successfully!" << std::endl;
+        }
+        std::chrono::steady_clock::time_point read_end = std::chrono::steady_clock::now();
+        std::chrono::duration<double> read_duration = read_end - read_start;
+        read_spans.push_back(read_duration.count());
+        sleep(1);
+    }
+    double avg_read_span = std::accumulate(read_spans.begin(), read_spans.end(), 0.0) / read_spans.size();
+    double max_read_span = *std::max_element(read_spans.begin(), read_spans.end());
+    double min_read_span = *std::min_element(read_spans.begin(), read_spans.end());
+    std::cout << "Average Read Span: " << avg_read_span << " seconds" << std::endl;
+    std::cout << "Max Read Span: " << max_read_span << " seconds" << std::endl;
+    std::cout << "Min Read Span: " << min_read_span << " seconds" << std::endl;
+    
     /*
     // for recovery test
     std::vector<double> recovery_times;

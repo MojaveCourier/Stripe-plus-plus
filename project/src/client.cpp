@@ -893,38 +893,45 @@ namespace ECProject
     });
     std::shared_ptr<char[]> data_ptr_array(new char[static_cast<size_t>(block_cnt) * m_sys_config->BlockSize]);
     char * data_ptr_array_raw = data_ptr_array.get();
-    std::vector<std::thread> threads;
-    for(int i = 0; i < block_cnt; i++)
-    {
-      threads.push_back(std::thread(([this, &reply, i, data_ptr_array_raw, block_size]()mutable {
-        asio::io_context io_context;
-        asio::ip::tcp::socket socket_data(io_context);
-        this->acceptor.accept(socket_data);
-        uint32_t block_id;
-        asio::read(socket_data, asio::buffer(&block_id, sizeof(uint32_t)));
-        asio::error_code error; // implementation for order
-        size_t len = asio::read(socket_data, asio::buffer(data_ptr_array_raw + i * static_cast<size_t>(block_size), block_size), error);
-        if(len != block_size)
-        {
-          std::cout << "[Client] get blocks failed!" << std::endl;
-        }
-        asio::error_code ignore_ec;
-        socket_data.shutdown(asio::ip::tcp::socket::shutdown_receive, ignore_ec);
-        socket_data.close(ignore_ec);
-      })));
-    }
-    for(auto &thread : threads)
-    {
-      thread.join();
-    }
+    int num_connections = 0;
     notify_thread.join();
     if (!is_get_blocks)
     {
       std::cout << "[Client] get blocks failed!" << std::endl;
       return nullptr;
     }
-    //std::cout << "[Client] get blocks success!" << std::endl;
-    
+    num_connections = reply.proxyips_size();
+    if (num_connections <= 0)
+    {
+      num_connections = block_cnt;
+    }
+    std::vector<std::thread> threads;
+    for (int c = 0; c < num_connections; c++)
+    {
+      threads.push_back(std::thread([this, data_ptr_array_raw, block_size, block_cnt]() {
+        asio::io_context io_context;
+        asio::ip::tcp::socket socket_data(io_context);
+        this->acceptor.accept(socket_data);
+        asio::error_code error;
+        while (true)
+        {
+          uint32_t block_id;
+          size_t n = asio::read(socket_data, asio::buffer(&block_id, sizeof(uint32_t)), error);
+          if (n == 0 || error)
+            break;
+          size_t len = asio::read(socket_data, asio::buffer(data_ptr_array_raw + static_cast<size_t>(block_id) * static_cast<size_t>(block_size), block_size), error);
+          if (len != static_cast<size_t>(block_size))
+            break;
+        }
+        asio::error_code ignore_ec;
+        socket_data.shutdown(asio::ip::tcp::socket::shutdown_receive, ignore_ec);
+        socket_data.close(ignore_ec);
+      }));
+    }
+    for (auto &thread : threads)
+    {
+      thread.join();
+    }
     return data_ptr_array;
   }
   

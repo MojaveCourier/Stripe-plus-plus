@@ -1465,6 +1465,7 @@ namespace ECProject
     std::string object_key = keyClient->key();
     Object &object = m_object_table[object_key];
     std::vector<int> block_ids = object.data_blocks;
+    std::cout << "block_ids size: " << block_ids.size() << std::endl;
     int stripe_id = object.stripe_id;
     Stripe &t_stripe = m_stripe_table[stripe_id];
     
@@ -1478,33 +1479,40 @@ namespace ECProject
         unique_cluster_ids.push_back(get_cluster_ids[i]);
       }
     }
-    
-    proxy_proto::StripeAndBlockIDs stripe_block_ids[unique_cluster_ids.size()];
+    std::cout << "unique_cluster_ids size: " << unique_cluster_ids.size() << std::endl;
+    std::vector<proxy_proto::StripeAndBlockIDs> stripe_block_ids_vec(unique_cluster_ids.size());
     for(int i = 0; i < block_ids.size(); i++){
       int idx = std::find(unique_cluster_ids.begin(), unique_cluster_ids.end(), get_cluster_ids[i]) - unique_cluster_ids.begin();
-      stripe_block_ids[idx].add_block_ids(block_ids[i]);
-      stripe_block_ids[idx].add_block_keys(t_stripe.blocks[block_ids[i]]->block_key);
-      stripe_block_ids[idx].add_datanodeips(m_node_table[t_stripe.blocks[block_ids[i]]->map2node].node_ip);
-      stripe_block_ids[idx].add_datanodeports(m_node_table[t_stripe.blocks[block_ids[i]]->map2node].node_port);
+      stripe_block_ids_vec[idx].add_block_ids(block_ids[i]);
+      stripe_block_ids_vec[idx].add_block_keys(t_stripe.blocks[block_ids[i]]->block_key);
+      stripe_block_ids_vec[idx].add_datanodeips(m_node_table[t_stripe.blocks[block_ids[i]]->map2node].node_ip);
+      stripe_block_ids_vec[idx].add_datanodeports(m_node_table[t_stripe.blocks[block_ids[i]]->map2node].node_port);
     }
-    
+    // 供 client 按 proxy 数量 accept，每个 proxy 只建一条连接
+    for (size_t i = 0; i < unique_cluster_ids.size(); i++) {
+      proxyIPPort->add_proxyips(m_cluster_table[unique_cluster_ids[i]].proxy_ip);
+      proxyIPPort->add_proxyports(m_cluster_table[unique_cluster_ids[i]].proxy_port);
+    }
     std::vector<std::thread> get_threads;
-    for(int i = 0; i < unique_cluster_ids.size(); i++){
-      get_threads.push_back(std::thread([this, &stripe_block_ids, &client_ip, &client_port, &proxyIPPort, &unique_cluster_ids, i](){
+    for(size_t i = 0; i < unique_cluster_ids.size(); i++){
+      proxy_proto::StripeAndBlockIDs req_copy;
+      req_copy.CopyFrom(stripe_block_ids_vec[i]);
+      int cluster_id = unique_cluster_ids[i];
+      get_threads.push_back(std::thread([this, req_copy, cluster_id, client_ip, client_port]() mutable {
         grpc::ClientContext cont;
         proxy_proto::GetReply stripe_reply;
-        stripe_block_ids[i].set_clientip(client_ip);
-        stripe_block_ids[i].set_clientport(client_port);
-        grpc::Status status = m_proxy_ptrs[m_cluster_table[unique_cluster_ids[i]].proxy_ip + ":" + std::to_string(m_cluster_table[unique_cluster_ids[i]].proxy_port)]->getBlocks(&cont, stripe_block_ids[i], &stripe_reply);
+        req_copy.set_clientip(client_ip);
+        req_copy.set_clientport(client_port);
+        grpc::Status status = m_proxy_ptrs[m_cluster_table[cluster_id].proxy_ip + ":" + std::to_string(m_cluster_table[cluster_id].proxy_port)]->getBlocks(&cont, req_copy, &stripe_reply);
         if (!status.ok())
         {
-          std::cout << "[GET OBJECT] getting object blocks from proxy " << m_cluster_table[unique_cluster_ids[i]].proxy_ip << ":" << m_cluster_table[unique_cluster_ids[i]].proxy_port << " failed!" << std::endl;
+          std::cout << "[GET OBJECT] getting object blocks from proxy " << m_cluster_table[cluster_id].proxy_ip << ":" << m_cluster_table[cluster_id].proxy_port << " failed!" << std::endl;
         }
       }));
     }
     for (auto &thread : get_threads)
     {
-      thread.join();
+      thread.detach();
     }
     return grpc::Status::OK;
   }

@@ -1600,7 +1600,7 @@ namespace ECProject
     std::vector<std::thread> get_threads;
     for(int i = 0; i < request->block_ids_size(); i++)
     {
-      get_threads.push_back(std::thread([this, i, &blocks, &request, BlockSize]() {
+      get_threads.push_back(std::thread([this, i, blocks, request, BlockSize]() {
         this->GetFromDatanode(
             request->block_keys(i), 
             blocks + i * BlockSize,
@@ -1609,31 +1609,35 @@ namespace ECProject
             static_cast<int>(request->datanodeports(i))
         );    
       }));
-      asio::error_code error;
-      asio::io_context io_context;
-      asio::ip::tcp::socket socket_data(io_context);
-      asio::ip::tcp::resolver resolver(io_context);
-      asio::ip::tcp::resolver::results_type endpoints = resolver.resolve(request->clientip(), std::to_string(request->clientport()));;
-      socket_data.connect(*endpoints, error);
-      if (error)
-      {
-        std::cout << "error in connect" << std::endl;
-      }
-      std::cout << "connected to client" << std::endl;
-      u_int32_t block_id = request->block_ids(i);
-      asio::write(socket_data, asio::buffer(&block_id, sizeof(u_int32_t)));
-      asio::write(socket_data, asio::buffer(blocks + i * static_cast<size_t>(BlockSize), BlockSize));
-      asio::error_code ignore_ec;
-      socket_data.shutdown(asio::ip::tcp::socket::shutdown_send, ignore_ec);
-      socket_data.close(ignore_ec);
     }
-
     for(int i = 0; i < request->block_ids_size(); i++)
     {
       get_threads[i].join();
     }
 
-    delete blocks;
+    asio::error_code error;
+    asio::io_context io_context;
+    asio::ip::tcp::socket socket_data(io_context);
+    asio::ip::tcp::resolver resolver(io_context);
+    asio::ip::tcp::resolver::results_type endpoints = resolver.resolve(request->clientip(), std::to_string(request->clientport()));
+    socket_data.connect(*endpoints, error);
+    if (error)
+    {
+      std::cout << "error in connect to client" << std::endl;
+      delete[] blocks;
+      return grpc::Status(grpc::StatusCode::UNAVAILABLE, "connect to client failed");
+    }
+    for(int i = 0; i < request->block_ids_size(); i++)
+    {
+      u_int32_t block_id = request->block_ids(i);
+      asio::write(socket_data, asio::buffer(&block_id, sizeof(u_int32_t)));
+      asio::write(socket_data, asio::buffer(blocks + i * static_cast<size_t>(BlockSize), BlockSize));
+    }
+    asio::error_code ignore_ec;
+    socket_data.shutdown(asio::ip::tcp::socket::shutdown_send, ignore_ec);
+    socket_data.close(ignore_ec);
+
+    delete[] blocks;
     return grpc::Status();
   }
 

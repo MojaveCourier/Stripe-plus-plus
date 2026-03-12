@@ -2,7 +2,7 @@
 
 USER="root"
 
-REMOTE_COMMAND="cd /users/qiliang/Stripe-plus-plus && sh run_coordinator.sh"
+REMOTE_COMMAND="cd /users/Fengming/Stripe-plus-plus && sh run_coordinator.sh"
 
 PARALLEL=5
 

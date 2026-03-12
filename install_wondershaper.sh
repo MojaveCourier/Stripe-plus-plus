@@ -5,7 +5,7 @@ HOSTS_FILE="hosts"
 USER="root"
 
 REMOTE_COMMAND="
-cd /users/qiliang && \
+cd /users/Fengming && \
 git clone https://github.com/magnific0/wondershaper.git && \
 cd wondershaper && \
 sudo make install

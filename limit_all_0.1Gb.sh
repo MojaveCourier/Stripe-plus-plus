@@ -4,7 +4,7 @@ HOSTS_FILE="proxy_hosts"
 
 USER="root"
 
-REMOTE_COMMAND="cd /users/qiliang/Stripe-plus-plus && sh limit_0.1Gb.sh"
+REMOTE_COMMAND="cd /users/Fengming/Stripe-plus-plus && sh limit_0.1Gb.sh"
 
 PARALLEL=5
 

@@ -4,7 +4,7 @@ HOSTS_FILE="proxy_hosts"
 
 USER="root"
 
-REMOTE_COMMAND="cd /users/qiliang/Stripe-plus-plus && sh run_proxy_datanode.sh"
+REMOTE_COMMAND="ulimit -n 65536 &&cd /users/Fengming/Stripe-plus-plus && sh run_proxy_datanode.sh"
 
 PARALLEL=50
 
