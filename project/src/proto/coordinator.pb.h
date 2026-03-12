@@ -948,7 +948,6 @@ class RequestProxyIPPort final :
 
   enum : int {
     kKeyFieldNumber = 1,
-    kAppendModeFieldNumber = 3,
     kValuesizebytesFieldNumber = 2,
   };
   // string key = 1;
@@ -963,20 +962,6 @@ class RequestProxyIPPort final :
   const std::string& _internal_key() const;
   inline PROTOBUF_ALWAYS_INLINE void _internal_set_key(const std::string& value);
   std::string* _internal_mutable_key();
-  public:
-
-  // string append_mode = 3;
-  void clear_append_mode();
-  const std::string& append_mode() const;
-  template <typename ArgT0 = const std::string&, typename... ArgT>
-  void set_append_mode(ArgT0&& arg0, ArgT... args);
-  std::string* mutable_append_mode();
-  PROTOBUF_NODISCARD std::string* release_append_mode();
-  void set_allocated_append_mode(std::string* append_mode);
-  private:
-  const std::string& _internal_append_mode() const;
-  inline PROTOBUF_ALWAYS_INLINE void _internal_set_append_mode(const std::string& value);
-  std::string* _internal_mutable_append_mode();
   public:
 
   // uint64 valuesizebytes = 2;
@@ -997,7 +982,6 @@ class RequestProxyIPPort final :
   typedef void DestructorSkippable_;
   struct Impl_ {
     ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr key_;
-    ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr append_mode_;
     uint64_t valuesizebytes_;
     mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
   };
@@ -4213,56 +4197,6 @@ inline void RequestProxyIPPort::_internal_set_valuesizebytes(uint64_t value) {
 inline void RequestProxyIPPort::set_valuesizebytes(uint64_t value) {
   _internal_set_valuesizebytes(value);
   // @@protoc_insertion_point(field_set:coordinator_proto.RequestProxyIPPort.valuesizebytes)
-}
-
-// string append_mode = 3;
-inline void RequestProxyIPPort::clear_append_mode() {
-  _impl_.append_mode_.ClearToEmpty();
-}
-inline const std::string& RequestProxyIPPort::append_mode() const {
-  // @@protoc_insertion_point(field_get:coordinator_proto.RequestProxyIPPort.append_mode)
-  return _internal_append_mode();
-}
-template <typename ArgT0, typename... ArgT>
-inline PROTOBUF_ALWAYS_INLINE
-void RequestProxyIPPort::set_append_mode(ArgT0&& arg0, ArgT... args) {
- 
- _impl_.append_mode_.Set(static_cast<ArgT0 &&>(arg0), args..., GetArenaForAllocation());
-  // @@protoc_insertion_point(field_set:coordinator_proto.RequestProxyIPPort.append_mode)
-}
-inline std::string* RequestProxyIPPort::mutable_append_mode() {
-  std::string* _s = _internal_mutable_append_mode();
-  // @@protoc_insertion_point(field_mutable:coordinator_proto.RequestProxyIPPort.append_mode)
-  return _s;
-}
-inline const std::string& RequestProxyIPPort::_internal_append_mode() const {
-  return _impl_.append_mode_.Get();
-}
-inline void RequestProxyIPPort::_internal_set_append_mode(const std::string& value) {
-  
-  _impl_.append_mode_.Set(value, GetArenaForAllocation());
-}
-inline std::string* RequestProxyIPPort::_internal_mutable_append_mode() {
-  
-  return _impl_.append_mode_.Mutable(GetArenaForAllocation());
-}
-inline std::string* RequestProxyIPPort::release_append_mode() {
-  // @@protoc_insertion_point(field_release:coordinator_proto.RequestProxyIPPort.append_mode)
-  return _impl_.append_mode_.Release();
-}
-inline void RequestProxyIPPort::set_allocated_append_mode(std::string* append_mode) {
-  if (append_mode != nullptr) {
-    
-  } else {
-    
-  }
-  _impl_.append_mode_.SetAllocated(append_mode, GetArenaForAllocation());
-#ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
-  if (_impl_.append_mode_.IsDefault()) {
-    _impl_.append_mode_.Set("", GetArenaForAllocation());
-  }
-#endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
-  // @@protoc_insertion_point(field_set_allocated:coordinator_proto.RequestProxyIPPort.append_mode)
 }
 
 // -------------------------------------------------------------------

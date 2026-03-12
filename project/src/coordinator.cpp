@@ -144,8 +144,6 @@ namespace ECProject
         placement.set_cluster_id(cluster_ids[i]);
         placement.set_stripe_id(m_cur_stripe_id - 1);
         // placement.set_append_size(datanode_ids[i].size() * m_sys_config->BlockSize); // bugs
-        placement.set_is_merge_parity(false);
-        placement.set_append_mode("UNILRC_MODE");
         placement.set_is_serialized(false);
         for (size_t j = 0; j < datanode_ids[i].size(); j++) {
           if(datanode_ids[i][j] >= m_sys_config->k){
@@ -181,8 +179,6 @@ namespace ECProject
         placement.set_cluster_id(cluster_ids[i]);
         placement.set_stripe_id(m_cur_stripe_id - 1);
         placement.set_append_size(datanode_ids[i].size() * m_sys_config->BlockSize);
-        placement.set_is_merge_parity(false);
-        placement.set_append_mode("UNILRC_MODE");
         placement.set_is_serialized(false);
         for (size_t j = 0; j < datanode_ids[i].size(); j++) {
           placement.add_datanodeip(m_node_table[datanode_ids[i][j]].node_ip);
@@ -645,20 +641,6 @@ namespace ECProject
     map[key].push_back(value);
   }
 
-  int CoordinatorImpl::getClusterAppendSize(Stripe *stripe, const std::map<int, std::pair<int, int>> &block_to_slice_sizes, int curr_group_id, int parity_slice_size)
-  {
-    int cluster_append_size = 0;
-
-    for (int i = curr_group_id * stripe->k / stripe->z; i < (curr_group_id + 1) * stripe->k / stripe->z; i++)
-    {
-      if (block_to_slice_sizes.find(i) != block_to_slice_sizes.end())
-        cluster_append_size += block_to_slice_sizes.at(i).first;
-    }
-
-    cluster_append_size += parity_slice_size * (stripe->r + stripe->z) / stripe->z;
-    return cluster_append_size;
-  }
-
   // add repeated fields to plan
   void addBlockToAppendPlan(proxy_proto::AppendStripeDataPlacement &plan,
                             const Block *block,
@@ -671,147 +653,6 @@ namespace ECProject
     plan.add_blockids(block->block_id);
     plan.add_offsets(slice_info.second);
     plan.add_sizes(slice_info.first);
-  }
-
-  std::vector<proxy_proto::AppendStripeDataPlacement> CoordinatorImpl::generateAppendPlan(Stripe *stripe, int curr_logical_offset, int append_size)
-  {
-    std::vector<proxy_proto::AppendStripeDataPlacement> append_plans;
-    std::string append_mode = m_sys_config->AppendMode;
-    int unit_size = m_sys_config->UnitSize;
-    int remain_size = stripe->k * m_sys_config->BlockSize - curr_logical_offset;
-    assert(remain_size >= append_size && "append size is larger than the remaining size of the stripe!");
-
-    // int curr_group_id = (curr_logical_offset / (unit_size * stripe->k / stripe->z)) % stripe->z;
-    int curr_block_id = (curr_logical_offset / unit_size) % stripe->k;
-    // compute how many units that need to be appended
-    int num_units = (curr_logical_offset + append_size - 1) / unit_size - curr_logical_offset / unit_size + 1;
-    // int num_data_groups = std::min((curr_logical_offset + append_size - 1) / (unit_size * stripe->k / stripe->z) - curr_logical_offset / (unit_size * stripe->k / stripe->z) + 1, stripe->z);
-    int num_unit_stripes = (curr_logical_offset + append_size - 1) / (unit_size * stripe->k) - curr_logical_offset / (unit_size * stripe->k) + 1;
-
-    // compute the size and offset of the parity slice
-    // TODO: optimize the append size that below a unit_size but placed into two units within a unit_stripe
-    int parity_slice_size = -1;
-    int parity_slice_offset = -1;
-    switch (append_mode[0])
-    {
-    case 'R': // REP_MODE
-      parity_slice_size = append_size;
-      break;
-    case 'U': // UNILRC_MODE
-      parity_slice_size = num_unit_stripes * unit_size;
-      parity_slice_offset = curr_logical_offset / (unit_size * stripe->k) * unit_size;
-      if (num_units == 1)
-      {
-        parity_slice_size = append_size;
-        parity_slice_offset += curr_logical_offset % unit_size;
-      }
-      if (num_unit_stripes > 1 && (curr_logical_offset + append_size - 1) % (unit_size * stripe->k) < unit_size - 1)
-      {
-        parity_slice_size = (num_unit_stripes - 1) * unit_size + (curr_logical_offset + append_size - 1) % (unit_size * stripe->k) + 1;
-      }
-      break;
-    case 'C': // CACHED_MODE
-      parity_slice_size = num_unit_stripes * unit_size;
-      parity_slice_offset = curr_logical_offset / (unit_size * stripe->k) * unit_size;
-      break;
-    default:
-      std::cout << "[ERROR] Invalid append mode: " << append_mode << std::endl;
-      return append_plans;
-    }
-
-    // key: block_id, value: (slice_size, physical_offset)
-    std::map<int, std::pair<int, int>> block_to_slice_sizes;
-    int tmp_size = append_size;
-    int tmp_offset = curr_logical_offset;
-    bool is_merge_parity = curr_logical_offset + append_size == m_sys_config->BlockSize * stripe->k;
-
-    // add data slices to block_to_slice_sizes
-    while (tmp_size > 0)
-    {
-      int sub_slice_size = unit_size;
-      // first slice
-      if (tmp_size == append_size && curr_logical_offset % unit_size != 0)
-      {
-        sub_slice_size = std::min(unit_size - curr_logical_offset % unit_size, append_size);
-      }
-      else
-      {
-        sub_slice_size = std::min(unit_size, tmp_size);
-      }
-      if (block_to_slice_sizes.find(curr_block_id) == block_to_slice_sizes.end())
-      {
-        block_to_slice_sizes[curr_block_id].first = sub_slice_size;
-        block_to_slice_sizes[curr_block_id].second = tmp_offset % unit_size + unit_size * (tmp_offset / (stripe->k * unit_size));
-      }
-      else
-      {
-        block_to_slice_sizes[curr_block_id].first += sub_slice_size;
-      }
-      curr_block_id = (curr_block_id + 1) % stripe->k;
-      tmp_size -= sub_slice_size;
-      tmp_offset += sub_slice_size;
-    }
-
-    // add parity slices to block_to_slice_sizes
-    for (int i = stripe->k; i < stripe->n; i++)
-    {
-      block_to_slice_sizes[i].first = parity_slice_size;
-      block_to_slice_sizes[i].second = parity_slice_offset;
-    }
-
-    for (int i = 0; i < stripe->z; i++)
-    {
-      proxy_proto::AppendStripeDataPlacement plan;
-      plan.set_key(m_toolbox->gen_append_key(stripe->stripe_id, i));
-      plan.set_stripe_id(stripe->stripe_id);
-      plan.set_append_size(getClusterAppendSize(stripe, block_to_slice_sizes, i, parity_slice_size));
-      plan.set_is_merge_parity(is_merge_parity);
-      plan.set_cluster_id(stripe->blocks[stripe->group_to_blocks[i][0]]->map2cluster);
-      plan.set_append_mode(append_mode);
-      if (curr_logical_offset == 0 && append_size == m_sys_config->BlockSize * stripe->k)
-      {
-        plan.set_is_serialized(false);
-        plan.set_is_merge_parity(false);
-      }
-      else
-      {
-        plan.set_is_serialized(true);
-      }
-
-      // Add data slices to plan
-      for (int j = i * stripe->k / stripe->z;
-           j < (i + 1) * stripe->k / stripe->z; j++)
-      {
-        if (block_to_slice_sizes.find(j) != block_to_slice_sizes.end())
-        {
-          addBlockToAppendPlan(plan, stripe->blocks[j],
-                               m_node_table[stripe->blocks[j]->map2node],
-                               block_to_slice_sizes.at(j));
-        }
-      }
-
-      // Add global parity slices to plan
-      for (int j = stripe->k + i * stripe->r / stripe->z;
-           j < stripe->k + (i + 1) * stripe->r / stripe->z; j++)
-      {
-        addBlockToAppendPlan(plan, stripe->blocks[j],
-                             m_node_table[stripe->blocks[j]->map2node],
-                             block_to_slice_sizes.at(j));
-      }
-
-      // Add local parity slices to plan
-      for (int j = stripe->k + stripe->r + i * stripe->z / stripe->z;
-           j < stripe->k + stripe->r + (i + 1) * stripe->z / stripe->z; j++)
-      {
-        addBlockToAppendPlan(plan, stripe->blocks[j],
-                             m_node_table[stripe->blocks[j]->map2node],
-                             block_to_slice_sizes.at(j));
-      }
-
-      append_plans.push_back(plan);
-    }
-
-    return append_plans;
   }
 
   void CoordinatorImpl::notify_proxies_ready(const proxy_proto::AppendStripeDataPlacement &plan)
@@ -832,92 +673,6 @@ namespace ECProject
     }
   }
 
-  // Only processing the appending within a single stripe
-  grpc::Status CoordinatorImpl::uploadAppendValue(
-      grpc::ServerContext *context,
-      const coordinator_proto::RequestProxyIPPort *keyValueSize,
-      coordinator_proto::ReplyProxyIPsPorts *proxyIPPort)
-  {
-    std::string clientID = keyValueSize->key();
-    int appendSizeBytes = keyValueSize->valuesizebytes();
-    std::string append_mode = keyValueSize->append_mode();
-
-    // 1. record metadata
-    // logical offset within the block stripe
-    if (m_cur_offset_table.find(clientID) == m_cur_offset_table.end())
-    {
-      // first append
-      m_cur_offset_table[clientID] = StripeOffset(m_cur_stripe_id++, 0);
-    }
-    StripeOffset curStripeOffset = m_cur_offset_table[clientID];
-
-    assert(curStripeOffset.offset + appendSizeBytes <= m_sys_config->BlockSize * m_sys_config->k && "append size is larger than the remaining size of the stripe!");
-
-    // 2. generate data placement
-    Stripe *stripe = nullptr;
-    if (curStripeOffset.offset == 0)
-    {
-      // first append
-      Stripe t_stripe;
-      t_stripe.stripe_id = curStripeOffset.stripe_id;
-      t_stripe.n = m_sys_config->n;
-      t_stripe.k = m_sys_config->k;
-      t_stripe.r = m_sys_config->r;
-      t_stripe.z = m_sys_config->z;
-      t_stripe.object_keys.push_back(clientID);
-      initialize_azurelrc_stripe_placement(&t_stripe);
-      m_stripe_table[t_stripe.stripe_id] = t_stripe;
-      stripe = &m_stripe_table[t_stripe.stripe_id];
-    }
-    else
-    {
-      // append to the existing stripe
-      stripe = &m_stripe_table[curStripeOffset.stripe_id];
-    }
-
-    std::vector<proxy_proto::AppendStripeDataPlacement> append_plans = generateAppendPlan(stripe, curStripeOffset.offset, appendSizeBytes);
-    if (append_plans.empty())
-    {
-      std::cout << "[ERROR] Invalid append mode: " << append_mode << std::endl;
-      return grpc::Status(grpc::StatusCode::INVALID_ARGUMENT, "Invalid append mode");
-    }
-
-    for (const auto &plan : append_plans)
-    {
-      m_mutex.lock();
-      m_object_commit_table.erase(plan.key());
-      m_mutex.unlock();
-    }
-
-    // 3. notify proxies to receive data
-    // need multiple proxies to receive data, so need multiple threads
-    std::vector<std::thread> threads;
-    int sum_append_size = 0;
-    for (const auto &plan : append_plans)
-    {
-      threads.push_back(std::thread(&CoordinatorImpl::notify_proxies_ready, this, plan));
-      proxyIPPort->add_append_keys(plan.key());
-      proxyIPPort->add_proxyips(m_cluster_table[plan.cluster_id()].proxy_ip);
-      proxyIPPort->add_proxyports(m_cluster_table[plan.cluster_id()].proxy_port + ECProject::PROXY_PORT_SHIFT); // use another port to accept data
-      proxyIPPort->add_cluster_slice_sizes(plan.append_size());
-      sum_append_size += plan.append_size();
-    }
-    for (auto &thread : threads)
-    {
-      thread.join();
-    }
-    proxyIPPort->set_sum_append_size(sum_append_size);
-
-    m_cur_offset_table[clientID].offset += appendSizeBytes;
-    // std::cout << "[Coordinator] stripe_id: " << m_cur_offset_table[clientID].stripe_id << " offset: " << m_cur_offset_table[clientID].offset << " is_erase " << (m_cur_offset_table[clientID].offset == m_sys_config->BlockSize * m_sys_config->k) << std::endl;
-    if (m_cur_offset_table[clientID].offset == m_sys_config->BlockSize * m_sys_config->k)
-    {
-      m_cur_offset_table.erase(clientID);
-    }
-
-    return grpc::Status::OK;
-  }
-
   std::vector<proxy_proto::AppendStripeDataPlacement> CoordinatorImpl::generate_add_plans(Stripe *stripe)
   {
     std::vector<proxy_proto::AppendStripeDataPlacement> add_plans;
@@ -930,9 +685,7 @@ namespace ECProject
       plan.set_key(m_toolbox->gen_append_key(stripe->stripe_id, i));
       plan.set_stripe_id(stripe->stripe_id);
       plan.set_append_size(append_size);
-      plan.set_is_merge_parity(false);
       plan.set_cluster_id(mapped_cluster_id);
-      plan.set_append_mode("UNILRC_MODE");
       plan.set_is_serialized(false);
 
       for (int j = 0; j < stripe->group_to_blocks[i].size(); j++)
@@ -980,9 +733,7 @@ namespace ECProject
 
       plan.set_key(m_toolbox->gen_append_key(stripe->stripe_id, i));
       plan.set_stripe_id(stripe->stripe_id);
-      plan.set_is_merge_parity(false);
       plan.set_cluster_id(mapped_cluster_id);
-      plan.set_append_mode("UNILRC_MODE");
       plan.set_is_serialized(false);
       plan.set_append_size(append_size);
 

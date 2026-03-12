@@ -87,38 +87,6 @@ namespace ECProject
     return grpc::Status::OK;
   }
 
-  bool ProxyImpl::MergeParityOnDatanode(const char *block_key, int block_id, const char *ip, int port, const std::string &append_mode)
-  {
-    try
-    {
-      grpc::ClientContext context;
-      datanode_proto::MergeParityInfo merge_parity_info;
-      datanode_proto::RequestResult result;
-      merge_parity_info.set_block_key(std::string(block_key));
-      merge_parity_info.set_block_id(block_id);
-      std::string node_ip_port = std::string(ip) + ":" + std::to_string(port);
-      // REP_MODE; CACHED_MODE
-      if (append_mode == "CACHED_MODE")
-      {
-        grpc::Status stat = m_datanode_ptrs[node_ip_port]->handleMergeParity(&context, merge_parity_info, &result);
-      }
-      /*else if (append_mode == "REP_MODE")
-      {
-        grpc::Status stat = m_datanode_ptrs[node_ip_port]->handleMergeParityWithRep(&context, merge_parity_info, &result);
-      }*/
-      else
-      {
-        throw std::runtime_error("Invalid append mode: " + append_mode);
-      }
-    }
-    catch (const std::exception &e)
-    {
-      std::cerr << e.what() << '\n';
-    }
-
-    return true;
-  }
-
   // slice_offset is the physical offset of the data block
   bool ProxyImpl::AppendToDatanode(const char *block_key, int block_id, size_t slice_size, const char *slice_buf, int slice_offset, const char *ip, int port, bool is_serialized)
   {
@@ -400,8 +368,6 @@ namespace ECProject
     std::cout << "Stripe ID: " << append_stripe_data_placement->stripe_id() << std::endl;
     std::cout << "Cluster ID: " << append_stripe_data_placement->cluster_id() << std::endl;
     std::cout << "Total Append Size: " << append_stripe_data_placement->append_size() << std::endl;
-    std::cout << "Is Merge Parity: " << (append_stripe_data_placement->is_merge_parity() ? "true" : "false") << std::endl;
-    std::cout << "Append Mode: " << append_stripe_data_placement->append_mode() << std::endl;
     std::cout << "Is Serialized: " << (append_stripe_data_placement->is_serialized() ? "true" : "false") << std::endl;
 
     // Print datanode info
@@ -505,23 +471,6 @@ namespace ECProject
         {
           std::cout << "[Proxy" << m_self_cluster_id << "][Append371]"
                     << "Finish appending to Stripe " << stripe_id << std::endl;
-        }
-
-        if (placement_copy->is_merge_parity())
-        {
-          for (int j = 0; j < slice_num; j++)
-          {
-            if (placement_copy->blockids(j) >= m_sys_config->k)
-            {
-              MergeParityOnDatanode(placement_copy->blockkeys(j).c_str(), placement_copy->blockids(j), placement_copy->datanodeip(j).c_str(), placement_copy->datanodeport(j), placement_copy->append_mode());
-            }
-          }
-
-          if (IF_DEBUG)
-          {
-            std::cout << "[Proxy" << m_self_cluster_id << "][Append387]"
-                      << "Async merging parities of Stripe " << stripe_id << std::endl;
-          }
         }
 
         // report to coordinator

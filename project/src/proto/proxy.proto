@@ -236,8 +236,6 @@ message AppendStripeDataPlacement{
   // physical offset of each append slice within each block
   repeated uint64 offsets = 9;
   repeated uint64 sizes = 10;
-  bool is_merge_parity = 11;
-  string append_mode = 12;
   bool is_serialized = 13;
 }
 

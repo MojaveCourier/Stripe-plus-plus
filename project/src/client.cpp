@@ -64,11 +64,10 @@ namespace ECProject
     }
   }
 
-  int Client::get_append_slice_plans(std::string append_mode, const int curr_logical_offset, const int append_size, std::vector<std::vector<int>> *node_slice_sizes_per_cluster, std::vector<int> *modified_data_block_nums_per_cluster, std::vector<int> *data_ptr_size_array, int &parity_slice_size, int &parity_slice_offset)
+  int Client::get_append_slice_plans(const int curr_logical_offset, const int append_size, std::vector<std::vector<int>> *node_slice_sizes_per_cluster, std::vector<int> *modified_data_block_nums_per_cluster, std::vector<int> *data_ptr_size_array, int &parity_slice_size, int &parity_slice_offset)
   {
     assert(node_slice_sizes_per_cluster->size() == m_sys_config->z);
     assert(modified_data_block_nums_per_cluster->size() == m_sys_config->z);
-    assert(append_mode == "CACHED_MODE");
 
     int unit_size = m_sys_config->UnitSize;
     int num_unit_stripes = (curr_logical_offset + append_size - 1) / (unit_size * m_sys_config->k) - curr_logical_offset / (unit_size * m_sys_config->k) + 1;
@@ -638,7 +637,6 @@ namespace ECProject
     coordinator_proto::ReplyProxyIPsPorts reply;
     request.set_key(m_clientID);
     request.set_valuesizebytes(static_cast<size_t>(m_sys_config->BlockSize) *static_cast<size_t>(m_sys_config->k));
-    request.set_append_mode("CACHED_MODE");
     grpc::Status status = m_coordinator_ptr->uploadSetValue(&get_proxy_ip_port, request, &reply);
 
     if (!status.ok())

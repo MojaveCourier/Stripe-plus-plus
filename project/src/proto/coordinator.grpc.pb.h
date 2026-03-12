@@ -110,14 +110,6 @@ class coordinatorService final {
     std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::coordinator_proto::ReplyProxyIPsPorts>> PrepareAsyncuploadSubsetValue(::grpc::ClientContext* context, const ::coordinator_proto::RequestProxyIPPort& request, ::grpc::CompletionQueue* cq) {
       return std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::coordinator_proto::ReplyProxyIPsPorts>>(PrepareAsyncuploadSubsetValueRaw(context, request, cq));
     }
-    // append
-    virtual ::grpc::Status uploadAppendValue(::grpc::ClientContext* context, const ::coordinator_proto::RequestProxyIPPort& request, ::coordinator_proto::ReplyProxyIPsPorts* response) = 0;
-    std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::coordinator_proto::ReplyProxyIPsPorts>> AsyncuploadAppendValue(::grpc::ClientContext* context, const ::coordinator_proto::RequestProxyIPPort& request, ::grpc::CompletionQueue* cq) {
-      return std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::coordinator_proto::ReplyProxyIPsPorts>>(AsyncuploadAppendValueRaw(context, request, cq));
-    }
-    std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::coordinator_proto::ReplyProxyIPsPorts>> PrepareAsyncuploadAppendValue(::grpc::ClientContext* context, const ::coordinator_proto::RequestProxyIPPort& request, ::grpc::CompletionQueue* cq) {
-      return std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::coordinator_proto::ReplyProxyIPsPorts>>(PrepareAsyncuploadAppendValueRaw(context, request, cq));
-    }
     // get
     virtual ::grpc::Status getStripe(::grpc::ClientContext* context, const ::coordinator_proto::KeyAndClientIP& request, ::coordinator_proto::ReplyProxyIPsPorts* response) = 0;
     std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::coordinator_proto::ReplyProxyIPsPorts>> AsyncgetStripe(::grpc::ClientContext* context, const ::coordinator_proto::KeyAndClientIP& request, ::grpc::CompletionQueue* cq) {
@@ -208,9 +200,6 @@ class coordinatorService final {
       virtual void uploadObjectValue(::grpc::ClientContext* context, const ::coordinator_proto::RequestProxyIPPort* request, ::coordinator_proto::ReplyProxyIPsPorts* response, ::grpc::ClientUnaryReactor* reactor) = 0;
       virtual void uploadSubsetValue(::grpc::ClientContext* context, const ::coordinator_proto::RequestProxyIPPort* request, ::coordinator_proto::ReplyProxyIPsPorts* response, std::function<void(::grpc::Status)>) = 0;
       virtual void uploadSubsetValue(::grpc::ClientContext* context, const ::coordinator_proto::RequestProxyIPPort* request, ::coordinator_proto::ReplyProxyIPsPorts* response, ::grpc::ClientUnaryReactor* reactor) = 0;
-      // append
-      virtual void uploadAppendValue(::grpc::ClientContext* context, const ::coordinator_proto::RequestProxyIPPort* request, ::coordinator_proto::ReplyProxyIPsPorts* response, std::function<void(::grpc::Status)>) = 0;
-      virtual void uploadAppendValue(::grpc::ClientContext* context, const ::coordinator_proto::RequestProxyIPPort* request, ::coordinator_proto::ReplyProxyIPsPorts* response, ::grpc::ClientUnaryReactor* reactor) = 0;
       // get
       virtual void getStripe(::grpc::ClientContext* context, const ::coordinator_proto::KeyAndClientIP* request, ::coordinator_proto::ReplyProxyIPsPorts* response, std::function<void(::grpc::Status)>) = 0;
       virtual void getStripe(::grpc::ClientContext* context, const ::coordinator_proto::KeyAndClientIP* request, ::coordinator_proto::ReplyProxyIPsPorts* response, ::grpc::ClientUnaryReactor* reactor) = 0;
@@ -255,8 +244,6 @@ class coordinatorService final {
     virtual ::grpc::ClientAsyncResponseReaderInterface< ::coordinator_proto::ReplyProxyIPsPorts>* PrepareAsyncuploadObjectValueRaw(::grpc::ClientContext* context, const ::coordinator_proto::RequestProxyIPPort& request, ::grpc::CompletionQueue* cq) = 0;
     virtual ::grpc::ClientAsyncResponseReaderInterface< ::coordinator_proto::ReplyProxyIPsPorts>* AsyncuploadSubsetValueRaw(::grpc::ClientContext* context, const ::coordinator_proto::RequestProxyIPPort& request, ::grpc::CompletionQueue* cq) = 0;
     virtual ::grpc::ClientAsyncResponseReaderInterface< ::coordinator_proto::ReplyProxyIPsPorts>* PrepareAsyncuploadSubsetValueRaw(::grpc::ClientContext* context, const ::coordinator_proto::RequestProxyIPPort& request, ::grpc::CompletionQueue* cq) = 0;
-    virtual ::grpc::ClientAsyncResponseReaderInterface< ::coordinator_proto::ReplyProxyIPsPorts>* AsyncuploadAppendValueRaw(::grpc::ClientContext* context, const ::coordinator_proto::RequestProxyIPPort& request, ::grpc::CompletionQueue* cq) = 0;
-    virtual ::grpc::ClientAsyncResponseReaderInterface< ::coordinator_proto::ReplyProxyIPsPorts>* PrepareAsyncuploadAppendValueRaw(::grpc::ClientContext* context, const ::coordinator_proto::RequestProxyIPPort& request, ::grpc::CompletionQueue* cq) = 0;
     virtual ::grpc::ClientAsyncResponseReaderInterface< ::coordinator_proto::ReplyProxyIPsPorts>* AsyncgetStripeRaw(::grpc::ClientContext* context, const ::coordinator_proto::KeyAndClientIP& request, ::grpc::CompletionQueue* cq) = 0;
     virtual ::grpc::ClientAsyncResponseReaderInterface< ::coordinator_proto::ReplyProxyIPsPorts>* PrepareAsyncgetStripeRaw(::grpc::ClientContext* context, const ::coordinator_proto::KeyAndClientIP& request, ::grpc::CompletionQueue* cq) = 0;
     virtual ::grpc::ClientAsyncResponseReaderInterface< ::coordinator_proto::ReplyProxyIPsPorts>* AsyncgetBlocksRaw(::grpc::ClientContext* context, const ::coordinator_proto::BlockIDsAndClientIP& request, ::grpc::CompletionQueue* cq) = 0;
@@ -334,13 +321,6 @@ class coordinatorService final {
     }
     std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::coordinator_proto::ReplyProxyIPsPorts>> PrepareAsyncuploadSubsetValue(::grpc::ClientContext* context, const ::coordinator_proto::RequestProxyIPPort& request, ::grpc::CompletionQueue* cq) {
       return std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::coordinator_proto::ReplyProxyIPsPorts>>(PrepareAsyncuploadSubsetValueRaw(context, request, cq));
-    }
-    ::grpc::Status uploadAppendValue(::grpc::ClientContext* context, const ::coordinator_proto::RequestProxyIPPort& request, ::coordinator_proto::ReplyProxyIPsPorts* response) override;
-    std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::coordinator_proto::ReplyProxyIPsPorts>> AsyncuploadAppendValue(::grpc::ClientContext* context, const ::coordinator_proto::RequestProxyIPPort& request, ::grpc::CompletionQueue* cq) {
-      return std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::coordinator_proto::ReplyProxyIPsPorts>>(AsyncuploadAppendValueRaw(context, request, cq));
-    }
-    std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::coordinator_proto::ReplyProxyIPsPorts>> PrepareAsyncuploadAppendValue(::grpc::ClientContext* context, const ::coordinator_proto::RequestProxyIPPort& request, ::grpc::CompletionQueue* cq) {
-      return std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::coordinator_proto::ReplyProxyIPsPorts>>(PrepareAsyncuploadAppendValueRaw(context, request, cq));
     }
     ::grpc::Status getStripe(::grpc::ClientContext* context, const ::coordinator_proto::KeyAndClientIP& request, ::coordinator_proto::ReplyProxyIPsPorts* response) override;
     std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::coordinator_proto::ReplyProxyIPsPorts>> AsyncgetStripe(::grpc::ClientContext* context, const ::coordinator_proto::KeyAndClientIP& request, ::grpc::CompletionQueue* cq) {
@@ -424,8 +404,6 @@ class coordinatorService final {
       void uploadObjectValue(::grpc::ClientContext* context, const ::coordinator_proto::RequestProxyIPPort* request, ::coordinator_proto::ReplyProxyIPsPorts* response, ::grpc::ClientUnaryReactor* reactor) override;
       void uploadSubsetValue(::grpc::ClientContext* context, const ::coordinator_proto::RequestProxyIPPort* request, ::coordinator_proto::ReplyProxyIPsPorts* response, std::function<void(::grpc::Status)>) override;
       void uploadSubsetValue(::grpc::ClientContext* context, const ::coordinator_proto::RequestProxyIPPort* request, ::coordinator_proto::ReplyProxyIPsPorts* response, ::grpc::ClientUnaryReactor* reactor) override;
-      void uploadAppendValue(::grpc::ClientContext* context, const ::coordinator_proto::RequestProxyIPPort* request, ::coordinator_proto::ReplyProxyIPsPorts* response, std::function<void(::grpc::Status)>) override;
-      void uploadAppendValue(::grpc::ClientContext* context, const ::coordinator_proto::RequestProxyIPPort* request, ::coordinator_proto::ReplyProxyIPsPorts* response, ::grpc::ClientUnaryReactor* reactor) override;
       void getStripe(::grpc::ClientContext* context, const ::coordinator_proto::KeyAndClientIP* request, ::coordinator_proto::ReplyProxyIPsPorts* response, std::function<void(::grpc::Status)>) override;
       void getStripe(::grpc::ClientContext* context, const ::coordinator_proto::KeyAndClientIP* request, ::coordinator_proto::ReplyProxyIPsPorts* response, ::grpc::ClientUnaryReactor* reactor) override;
       void getBlocks(::grpc::ClientContext* context, const ::coordinator_proto::BlockIDsAndClientIP* request, ::coordinator_proto::ReplyProxyIPsPorts* response, std::function<void(::grpc::Status)>) override;
@@ -471,8 +449,6 @@ class coordinatorService final {
     ::grpc::ClientAsyncResponseReader< ::coordinator_proto::ReplyProxyIPsPorts>* PrepareAsyncuploadObjectValueRaw(::grpc::ClientContext* context, const ::coordinator_proto::RequestProxyIPPort& request, ::grpc::CompletionQueue* cq) override;
     ::grpc::ClientAsyncResponseReader< ::coordinator_proto::ReplyProxyIPsPorts>* AsyncuploadSubsetValueRaw(::grpc::ClientContext* context, const ::coordinator_proto::RequestProxyIPPort& request, ::grpc::CompletionQueue* cq) override;
     ::grpc::ClientAsyncResponseReader< ::coordinator_proto::ReplyProxyIPsPorts>* PrepareAsyncuploadSubsetValueRaw(::grpc::ClientContext* context, const ::coordinator_proto::RequestProxyIPPort& request, ::grpc::CompletionQueue* cq) override;
-    ::grpc::ClientAsyncResponseReader< ::coordinator_proto::ReplyProxyIPsPorts>* AsyncuploadAppendValueRaw(::grpc::ClientContext* context, const ::coordinator_proto::RequestProxyIPPort& request, ::grpc::CompletionQueue* cq) override;
-    ::grpc::ClientAsyncResponseReader< ::coordinator_proto::ReplyProxyIPsPorts>* PrepareAsyncuploadAppendValueRaw(::grpc::ClientContext* context, const ::coordinator_proto::RequestProxyIPPort& request, ::grpc::CompletionQueue* cq) override;
     ::grpc::ClientAsyncResponseReader< ::coordinator_proto::ReplyProxyIPsPorts>* AsyncgetStripeRaw(::grpc::ClientContext* context, const ::coordinator_proto::KeyAndClientIP& request, ::grpc::CompletionQueue* cq) override;
     ::grpc::ClientAsyncResponseReader< ::coordinator_proto::ReplyProxyIPsPorts>* PrepareAsyncgetStripeRaw(::grpc::ClientContext* context, const ::coordinator_proto::KeyAndClientIP& request, ::grpc::CompletionQueue* cq) override;
     ::grpc::ClientAsyncResponseReader< ::coordinator_proto::ReplyProxyIPsPorts>* AsyncgetBlocksRaw(::grpc::ClientContext* context, const ::coordinator_proto::BlockIDsAndClientIP& request, ::grpc::CompletionQueue* cq) override;
@@ -499,7 +475,6 @@ class coordinatorService final {
     const ::grpc::internal::RpcMethod rpcmethod_uploadSetValue_;
     const ::grpc::internal::RpcMethod rpcmethod_uploadObjectValue_;
     const ::grpc::internal::RpcMethod rpcmethod_uploadSubsetValue_;
-    const ::grpc::internal::RpcMethod rpcmethod_uploadAppendValue_;
     const ::grpc::internal::RpcMethod rpcmethod_getStripe_;
     const ::grpc::internal::RpcMethod rpcmethod_getBlocks_;
     const ::grpc::internal::RpcMethod rpcmethod_getObject_;
@@ -527,8 +502,6 @@ class coordinatorService final {
     virtual ::grpc::Status uploadSetValue(::grpc::ServerContext* context, const ::coordinator_proto::RequestProxyIPPort* request, ::coordinator_proto::ReplyProxyIPsPorts* response);
     virtual ::grpc::Status uploadObjectValue(::grpc::ServerContext* context, const ::coordinator_proto::RequestProxyIPPort* request, ::coordinator_proto::ReplyProxyIPsPorts* response);
     virtual ::grpc::Status uploadSubsetValue(::grpc::ServerContext* context, const ::coordinator_proto::RequestProxyIPPort* request, ::coordinator_proto::ReplyProxyIPsPorts* response);
-    // append
-    virtual ::grpc::Status uploadAppendValue(::grpc::ServerContext* context, const ::coordinator_proto::RequestProxyIPPort* request, ::coordinator_proto::ReplyProxyIPsPorts* response);
     // get
     virtual ::grpc::Status getStripe(::grpc::ServerContext* context, const ::coordinator_proto::KeyAndClientIP* request, ::coordinator_proto::ReplyProxyIPsPorts* response);
     virtual ::grpc::Status getBlocks(::grpc::ServerContext* context, const ::coordinator_proto::BlockIDsAndClientIP* request, ::coordinator_proto::ReplyProxyIPsPorts* response);
@@ -705,32 +678,12 @@ class coordinatorService final {
     }
   };
   template <class BaseClass>
-  class WithAsyncMethod_uploadAppendValue : public BaseClass {
-   private:
-    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
-   public:
-    WithAsyncMethod_uploadAppendValue() {
-      ::grpc::Service::MarkMethodAsync(8);
-    }
-    ~WithAsyncMethod_uploadAppendValue() override {
-      BaseClassMustBeDerivedFromService(this);
-    }
-    // disable synchronous version of this method
-    ::grpc::Status uploadAppendValue(::grpc::ServerContext* /*context*/, const ::coordinator_proto::RequestProxyIPPort* /*request*/, ::coordinator_proto::ReplyProxyIPsPorts* /*response*/) override {
-      abort();
-      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
-    }
-    void RequestuploadAppendValue(::grpc::ServerContext* context, ::coordinator_proto::RequestProxyIPPort* request, ::grpc::ServerAsyncResponseWriter< ::coordinator_proto::ReplyProxyIPsPorts>* response, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
-      ::grpc::Service::RequestAsyncUnary(8, context, request, response, new_call_cq, notification_cq, tag);
-    }
-  };
-  template <class BaseClass>
   class WithAsyncMethod_getStripe : public BaseClass {
    private:
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithAsyncMethod_getStripe() {
-      ::grpc::Service::MarkMethodAsync(9);
+      ::grpc::Service::MarkMethodAsync(8);
     }
     ~WithAsyncMethod_getStripe() override {
       BaseClassMustBeDerivedFromService(this);
@@ -741,7 +694,7 @@ class coordinatorService final {
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
     void RequestgetStripe(::grpc::ServerContext* context, ::coordinator_proto::KeyAndClientIP* request, ::grpc::ServerAsyncResponseWriter< ::coordinator_proto::ReplyProxyIPsPorts>* response, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
-      ::grpc::Service::RequestAsyncUnary(9, context, request, response, new_call_cq, notification_cq, tag);
+      ::grpc::Service::RequestAsyncUnary(8, context, request, response, new_call_cq, notification_cq, tag);
     }
   };
   template <class BaseClass>
@@ -750,7 +703,7 @@ class coordinatorService final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithAsyncMethod_getBlocks() {
-      ::grpc::Service::MarkMethodAsync(10);
+      ::grpc::Service::MarkMethodAsync(9);
     }
     ~WithAsyncMethod_getBlocks() override {
       BaseClassMustBeDerivedFromService(this);
@@ -761,7 +714,7 @@ class coordinatorService final {
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
     void RequestgetBlocks(::grpc::ServerContext* context, ::coordinator_proto::BlockIDsAndClientIP* request, ::grpc::ServerAsyncResponseWriter< ::coordinator_proto::ReplyProxyIPsPorts>* response, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
-      ::grpc::Service::RequestAsyncUnary(10, context, request, response, new_call_cq, notification_cq, tag);
+      ::grpc::Service::RequestAsyncUnary(9, context, request, response, new_call_cq, notification_cq, tag);
     }
   };
   template <class BaseClass>
@@ -770,7 +723,7 @@ class coordinatorService final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithAsyncMethod_getObject() {
-      ::grpc::Service::MarkMethodAsync(11);
+      ::grpc::Service::MarkMethodAsync(10);
     }
     ~WithAsyncMethod_getObject() override {
       BaseClassMustBeDerivedFromService(this);
@@ -781,7 +734,7 @@ class coordinatorService final {
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
     void RequestgetObject(::grpc::ServerContext* context, ::coordinator_proto::KeyAndClientIP* request, ::grpc::ServerAsyncResponseWriter< ::coordinator_proto::ReplyProxyIPsPorts>* response, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
-      ::grpc::Service::RequestAsyncUnary(11, context, request, response, new_call_cq, notification_cq, tag);
+      ::grpc::Service::RequestAsyncUnary(10, context, request, response, new_call_cq, notification_cq, tag);
     }
   };
   template <class BaseClass>
@@ -790,7 +743,7 @@ class coordinatorService final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithAsyncMethod_getDegradedReadBlock() {
-      ::grpc::Service::MarkMethodAsync(12);
+      ::grpc::Service::MarkMethodAsync(11);
     }
     ~WithAsyncMethod_getDegradedReadBlock() override {
       BaseClassMustBeDerivedFromService(this);
@@ -801,7 +754,7 @@ class coordinatorService final {
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
     void RequestgetDegradedReadBlock(::grpc::ServerContext* context, ::coordinator_proto::KeyAndClientIP* request, ::grpc::ServerAsyncResponseWriter< ::coordinator_proto::DegradedReadReply>* response, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
-      ::grpc::Service::RequestAsyncUnary(12, context, request, response, new_call_cq, notification_cq, tag);
+      ::grpc::Service::RequestAsyncUnary(11, context, request, response, new_call_cq, notification_cq, tag);
     }
   };
   template <class BaseClass>
@@ -810,7 +763,7 @@ class coordinatorService final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithAsyncMethod_getRecovery() {
-      ::grpc::Service::MarkMethodAsync(13);
+      ::grpc::Service::MarkMethodAsync(12);
     }
     ~WithAsyncMethod_getRecovery() override {
       BaseClassMustBeDerivedFromService(this);
@@ -821,7 +774,7 @@ class coordinatorService final {
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
     void RequestgetRecovery(::grpc::ServerContext* context, ::coordinator_proto::KeyAndClientIP* request, ::grpc::ServerAsyncResponseWriter< ::coordinator_proto::RecoveryReply>* response, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
-      ::grpc::Service::RequestAsyncUnary(13, context, request, response, new_call_cq, notification_cq, tag);
+      ::grpc::Service::RequestAsyncUnary(12, context, request, response, new_call_cq, notification_cq, tag);
     }
   };
   template <class BaseClass>
@@ -830,7 +783,7 @@ class coordinatorService final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithAsyncMethod_fullNodeRecovery() {
-      ::grpc::Service::MarkMethodAsync(14);
+      ::grpc::Service::MarkMethodAsync(13);
     }
     ~WithAsyncMethod_fullNodeRecovery() override {
       BaseClassMustBeDerivedFromService(this);
@@ -841,7 +794,7 @@ class coordinatorService final {
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
     void RequestfullNodeRecovery(::grpc::ServerContext* context, ::coordinator_proto::NodeIdFromClient* request, ::grpc::ServerAsyncResponseWriter< ::coordinator_proto::RepBlockNum>* response, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
-      ::grpc::Service::RequestAsyncUnary(14, context, request, response, new_call_cq, notification_cq, tag);
+      ::grpc::Service::RequestAsyncUnary(13, context, request, response, new_call_cq, notification_cq, tag);
     }
   };
   template <class BaseClass>
@@ -850,7 +803,7 @@ class coordinatorService final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithAsyncMethod_delByStripe() {
-      ::grpc::Service::MarkMethodAsync(15);
+      ::grpc::Service::MarkMethodAsync(14);
     }
     ~WithAsyncMethod_delByStripe() override {
       BaseClassMustBeDerivedFromService(this);
@@ -861,7 +814,7 @@ class coordinatorService final {
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
     void RequestdelByStripe(::grpc::ServerContext* context, ::coordinator_proto::StripeIdFromClient* request, ::grpc::ServerAsyncResponseWriter< ::coordinator_proto::RepIfDeling>* response, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
-      ::grpc::Service::RequestAsyncUnary(15, context, request, response, new_call_cq, notification_cq, tag);
+      ::grpc::Service::RequestAsyncUnary(14, context, request, response, new_call_cq, notification_cq, tag);
     }
   };
   template <class BaseClass>
@@ -870,7 +823,7 @@ class coordinatorService final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithAsyncMethod_listStripes() {
-      ::grpc::Service::MarkMethodAsync(16);
+      ::grpc::Service::MarkMethodAsync(15);
     }
     ~WithAsyncMethod_listStripes() override {
       BaseClassMustBeDerivedFromService(this);
@@ -881,7 +834,7 @@ class coordinatorService final {
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
     void RequestlistStripes(::grpc::ServerContext* context, ::coordinator_proto::RequestToCoordinator* request, ::grpc::ServerAsyncResponseWriter< ::coordinator_proto::RepStripeIds>* response, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
-      ::grpc::Service::RequestAsyncUnary(16, context, request, response, new_call_cq, notification_cq, tag);
+      ::grpc::Service::RequestAsyncUnary(15, context, request, response, new_call_cq, notification_cq, tag);
     }
   };
   template <class BaseClass>
@@ -890,7 +843,7 @@ class coordinatorService final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithAsyncMethod_decodeTest() {
-      ::grpc::Service::MarkMethodAsync(17);
+      ::grpc::Service::MarkMethodAsync(16);
     }
     ~WithAsyncMethod_decodeTest() override {
       BaseClassMustBeDerivedFromService(this);
@@ -901,10 +854,10 @@ class coordinatorService final {
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
     void RequestdecodeTest(::grpc::ServerContext* context, ::coordinator_proto::KeyAndClientIP* request, ::grpc::ServerAsyncResponseWriter< ::coordinator_proto::DegradedReadReply>* response, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
-      ::grpc::Service::RequestAsyncUnary(17, context, request, response, new_call_cq, notification_cq, tag);
+      ::grpc::Service::RequestAsyncUnary(16, context, request, response, new_call_cq, notification_cq, tag);
     }
   };
-  typedef WithAsyncMethod_sayHelloToCoordinator<WithAsyncMethod_checkalive<WithAsyncMethod_setParameter<WithAsyncMethod_reportCommitAbort<WithAsyncMethod_checkCommitAbort<WithAsyncMethod_uploadSetValue<WithAsyncMethod_uploadObjectValue<WithAsyncMethod_uploadSubsetValue<WithAsyncMethod_uploadAppendValue<WithAsyncMethod_getStripe<WithAsyncMethod_getBlocks<WithAsyncMethod_getObject<WithAsyncMethod_getDegradedReadBlock<WithAsyncMethod_getRecovery<WithAsyncMethod_fullNodeRecovery<WithAsyncMethod_delByStripe<WithAsyncMethod_listStripes<WithAsyncMethod_decodeTest<Service > > > > > > > > > > > > > > > > > > AsyncService;
+  typedef WithAsyncMethod_sayHelloToCoordinator<WithAsyncMethod_checkalive<WithAsyncMethod_setParameter<WithAsyncMethod_reportCommitAbort<WithAsyncMethod_checkCommitAbort<WithAsyncMethod_uploadSetValue<WithAsyncMethod_uploadObjectValue<WithAsyncMethod_uploadSubsetValue<WithAsyncMethod_getStripe<WithAsyncMethod_getBlocks<WithAsyncMethod_getObject<WithAsyncMethod_getDegradedReadBlock<WithAsyncMethod_getRecovery<WithAsyncMethod_fullNodeRecovery<WithAsyncMethod_delByStripe<WithAsyncMethod_listStripes<WithAsyncMethod_decodeTest<Service > > > > > > > > > > > > > > > > > AsyncService;
   template <class BaseClass>
   class WithCallbackMethod_sayHelloToCoordinator : public BaseClass {
    private:
@@ -1122,45 +1075,18 @@ class coordinatorService final {
       ::grpc::CallbackServerContext* /*context*/, const ::coordinator_proto::RequestProxyIPPort* /*request*/, ::coordinator_proto::ReplyProxyIPsPorts* /*response*/)  { return nullptr; }
   };
   template <class BaseClass>
-  class WithCallbackMethod_uploadAppendValue : public BaseClass {
-   private:
-    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
-   public:
-    WithCallbackMethod_uploadAppendValue() {
-      ::grpc::Service::MarkMethodCallback(8,
-          new ::grpc::internal::CallbackUnaryHandler< ::coordinator_proto::RequestProxyIPPort, ::coordinator_proto::ReplyProxyIPsPorts>(
-            [this](
-                   ::grpc::CallbackServerContext* context, const ::coordinator_proto::RequestProxyIPPort* request, ::coordinator_proto::ReplyProxyIPsPorts* response) { return this->uploadAppendValue(context, request, response); }));}
-    void SetMessageAllocatorFor_uploadAppendValue(
-        ::grpc::MessageAllocator< ::coordinator_proto::RequestProxyIPPort, ::coordinator_proto::ReplyProxyIPsPorts>* allocator) {
-      ::grpc::internal::MethodHandler* const handler = ::grpc::Service::GetHandler(8);
-      static_cast<::grpc::internal::CallbackUnaryHandler< ::coordinator_proto::RequestProxyIPPort, ::coordinator_proto::ReplyProxyIPsPorts>*>(handler)
-              ->SetMessageAllocator(allocator);
-    }
-    ~WithCallbackMethod_uploadAppendValue() override {
-      BaseClassMustBeDerivedFromService(this);
-    }
-    // disable synchronous version of this method
-    ::grpc::Status uploadAppendValue(::grpc::ServerContext* /*context*/, const ::coordinator_proto::RequestProxyIPPort* /*request*/, ::coordinator_proto::ReplyProxyIPsPorts* /*response*/) override {
-      abort();
-      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
-    }
-    virtual ::grpc::ServerUnaryReactor* uploadAppendValue(
-      ::grpc::CallbackServerContext* /*context*/, const ::coordinator_proto::RequestProxyIPPort* /*request*/, ::coordinator_proto::ReplyProxyIPsPorts* /*response*/)  { return nullptr; }
-  };
-  template <class BaseClass>
   class WithCallbackMethod_getStripe : public BaseClass {
    private:
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithCallbackMethod_getStripe() {
-      ::grpc::Service::MarkMethodCallback(9,
+      ::grpc::Service::MarkMethodCallback(8,
           new ::grpc::internal::CallbackUnaryHandler< ::coordinator_proto::KeyAndClientIP, ::coordinator_proto::ReplyProxyIPsPorts>(
             [this](
                    ::grpc::CallbackServerContext* context, const ::coordinator_proto::KeyAndClientIP* request, ::coordinator_proto::ReplyProxyIPsPorts* response) { return this->getStripe(context, request, response); }));}
     void SetMessageAllocatorFor_getStripe(
         ::grpc::MessageAllocator< ::coordinator_proto::KeyAndClientIP, ::coordinator_proto::ReplyProxyIPsPorts>* allocator) {
-      ::grpc::internal::MethodHandler* const handler = ::grpc::Service::GetHandler(9);
+      ::grpc::internal::MethodHandler* const handler = ::grpc::Service::GetHandler(8);
       static_cast<::grpc::internal::CallbackUnaryHandler< ::coordinator_proto::KeyAndClientIP, ::coordinator_proto::ReplyProxyIPsPorts>*>(handler)
               ->SetMessageAllocator(allocator);
     }
@@ -1181,13 +1107,13 @@ class coordinatorService final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithCallbackMethod_getBlocks() {
-      ::grpc::Service::MarkMethodCallback(10,
+      ::grpc::Service::MarkMethodCallback(9,
           new ::grpc::internal::CallbackUnaryHandler< ::coordinator_proto::BlockIDsAndClientIP, ::coordinator_proto::ReplyProxyIPsPorts>(
             [this](
                    ::grpc::CallbackServerContext* context, const ::coordinator_proto::BlockIDsAndClientIP* request, ::coordinator_proto::ReplyProxyIPsPorts* response) { return this->getBlocks(context, request, response); }));}
     void SetMessageAllocatorFor_getBlocks(
         ::grpc::MessageAllocator< ::coordinator_proto::BlockIDsAndClientIP, ::coordinator_proto::ReplyProxyIPsPorts>* allocator) {
-      ::grpc::internal::MethodHandler* const handler = ::grpc::Service::GetHandler(10);
+      ::grpc::internal::MethodHandler* const handler = ::grpc::Service::GetHandler(9);
       static_cast<::grpc::internal::CallbackUnaryHandler< ::coordinator_proto::BlockIDsAndClientIP, ::coordinator_proto::ReplyProxyIPsPorts>*>(handler)
               ->SetMessageAllocator(allocator);
     }
@@ -1208,13 +1134,13 @@ class coordinatorService final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithCallbackMethod_getObject() {
-      ::grpc::Service::MarkMethodCallback(11,
+      ::grpc::Service::MarkMethodCallback(10,
           new ::grpc::internal::CallbackUnaryHandler< ::coordinator_proto::KeyAndClientIP, ::coordinator_proto::ReplyProxyIPsPorts>(
             [this](
                    ::grpc::CallbackServerContext* context, const ::coordinator_proto::KeyAndClientIP* request, ::coordinator_proto::ReplyProxyIPsPorts* response) { return this->getObject(context, request, response); }));}
     void SetMessageAllocatorFor_getObject(
         ::grpc::MessageAllocator< ::coordinator_proto::KeyAndClientIP, ::coordinator_proto::ReplyProxyIPsPorts>* allocator) {
-      ::grpc::internal::MethodHandler* const handler = ::grpc::Service::GetHandler(11);
+      ::grpc::internal::MethodHandler* const handler = ::grpc::Service::GetHandler(10);
       static_cast<::grpc::internal::CallbackUnaryHandler< ::coordinator_proto::KeyAndClientIP, ::coordinator_proto::ReplyProxyIPsPorts>*>(handler)
               ->SetMessageAllocator(allocator);
     }
@@ -1235,13 +1161,13 @@ class coordinatorService final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithCallbackMethod_getDegradedReadBlock() {
-      ::grpc::Service::MarkMethodCallback(12,
+      ::grpc::Service::MarkMethodCallback(11,
           new ::grpc::internal::CallbackUnaryHandler< ::coordinator_proto::KeyAndClientIP, ::coordinator_proto::DegradedReadReply>(
             [this](
                    ::grpc::CallbackServerContext* context, const ::coordinator_proto::KeyAndClientIP* request, ::coordinator_proto::DegradedReadReply* response) { return this->getDegradedReadBlock(context, request, response); }));}
     void SetMessageAllocatorFor_getDegradedReadBlock(
         ::grpc::MessageAllocator< ::coordinator_proto::KeyAndClientIP, ::coordinator_proto::DegradedReadReply>* allocator) {
-      ::grpc::internal::MethodHandler* const handler = ::grpc::Service::GetHandler(12);
+      ::grpc::internal::MethodHandler* const handler = ::grpc::Service::GetHandler(11);
       static_cast<::grpc::internal::CallbackUnaryHandler< ::coordinator_proto::KeyAndClientIP, ::coordinator_proto::DegradedReadReply>*>(handler)
               ->SetMessageAllocator(allocator);
     }
@@ -1262,13 +1188,13 @@ class coordinatorService final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithCallbackMethod_getRecovery() {
-      ::grpc::Service::MarkMethodCallback(13,
+      ::grpc::Service::MarkMethodCallback(12,
           new ::grpc::internal::CallbackUnaryHandler< ::coordinator_proto::KeyAndClientIP, ::coordinator_proto::RecoveryReply>(
             [this](
                    ::grpc::CallbackServerContext* context, const ::coordinator_proto::KeyAndClientIP* request, ::coordinator_proto::RecoveryReply* response) { return this->getRecovery(context, request, response); }));}
     void SetMessageAllocatorFor_getRecovery(
         ::grpc::MessageAllocator< ::coordinator_proto::KeyAndClientIP, ::coordinator_proto::RecoveryReply>* allocator) {
-      ::grpc::internal::MethodHandler* const handler = ::grpc::Service::GetHandler(13);
+      ::grpc::internal::MethodHandler* const handler = ::grpc::Service::GetHandler(12);
       static_cast<::grpc::internal::CallbackUnaryHandler< ::coordinator_proto::KeyAndClientIP, ::coordinator_proto::RecoveryReply>*>(handler)
               ->SetMessageAllocator(allocator);
     }
@@ -1289,13 +1215,13 @@ class coordinatorService final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithCallbackMethod_fullNodeRecovery() {
-      ::grpc::Service::MarkMethodCallback(14,
+      ::grpc::Service::MarkMethodCallback(13,
           new ::grpc::internal::CallbackUnaryHandler< ::coordinator_proto::NodeIdFromClient, ::coordinator_proto::RepBlockNum>(
             [this](
                    ::grpc::CallbackServerContext* context, const ::coordinator_proto::NodeIdFromClient* request, ::coordinator_proto::RepBlockNum* response) { return this->fullNodeRecovery(context, request, response); }));}
     void SetMessageAllocatorFor_fullNodeRecovery(
         ::grpc::MessageAllocator< ::coordinator_proto::NodeIdFromClient, ::coordinator_proto::RepBlockNum>* allocator) {
-      ::grpc::internal::MethodHandler* const handler = ::grpc::Service::GetHandler(14);
+      ::grpc::internal::MethodHandler* const handler = ::grpc::Service::GetHandler(13);
       static_cast<::grpc::internal::CallbackUnaryHandler< ::coordinator_proto::NodeIdFromClient, ::coordinator_proto::RepBlockNum>*>(handler)
               ->SetMessageAllocator(allocator);
     }
@@ -1316,13 +1242,13 @@ class coordinatorService final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithCallbackMethod_delByStripe() {
-      ::grpc::Service::MarkMethodCallback(15,
+      ::grpc::Service::MarkMethodCallback(14,
           new ::grpc::internal::CallbackUnaryHandler< ::coordinator_proto::StripeIdFromClient, ::coordinator_proto::RepIfDeling>(
             [this](
                    ::grpc::CallbackServerContext* context, const ::coordinator_proto::StripeIdFromClient* request, ::coordinator_proto::RepIfDeling* response) { return this->delByStripe(context, request, response); }));}
     void SetMessageAllocatorFor_delByStripe(
         ::grpc::MessageAllocator< ::coordinator_proto::StripeIdFromClient, ::coordinator_proto::RepIfDeling>* allocator) {
-      ::grpc::internal::MethodHandler* const handler = ::grpc::Service::GetHandler(15);
+      ::grpc::internal::MethodHandler* const handler = ::grpc::Service::GetHandler(14);
       static_cast<::grpc::internal::CallbackUnaryHandler< ::coordinator_proto::StripeIdFromClient, ::coordinator_proto::RepIfDeling>*>(handler)
               ->SetMessageAllocator(allocator);
     }
@@ -1343,13 +1269,13 @@ class coordinatorService final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithCallbackMethod_listStripes() {
-      ::grpc::Service::MarkMethodCallback(16,
+      ::grpc::Service::MarkMethodCallback(15,
           new ::grpc::internal::CallbackUnaryHandler< ::coordinator_proto::RequestToCoordinator, ::coordinator_proto::RepStripeIds>(
             [this](
                    ::grpc::CallbackServerContext* context, const ::coordinator_proto::RequestToCoordinator* request, ::coordinator_proto::RepStripeIds* response) { return this->listStripes(context, request, response); }));}
     void SetMessageAllocatorFor_listStripes(
         ::grpc::MessageAllocator< ::coordinator_proto::RequestToCoordinator, ::coordinator_proto::RepStripeIds>* allocator) {
-      ::grpc::internal::MethodHandler* const handler = ::grpc::Service::GetHandler(16);
+      ::grpc::internal::MethodHandler* const handler = ::grpc::Service::GetHandler(15);
       static_cast<::grpc::internal::CallbackUnaryHandler< ::coordinator_proto::RequestToCoordinator, ::coordinator_proto::RepStripeIds>*>(handler)
               ->SetMessageAllocator(allocator);
     }
@@ -1370,13 +1296,13 @@ class coordinatorService final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithCallbackMethod_decodeTest() {
-      ::grpc::Service::MarkMethodCallback(17,
+      ::grpc::Service::MarkMethodCallback(16,
           new ::grpc::internal::CallbackUnaryHandler< ::coordinator_proto::KeyAndClientIP, ::coordinator_proto::DegradedReadReply>(
             [this](
                    ::grpc::CallbackServerContext* context, const ::coordinator_proto::KeyAndClientIP* request, ::coordinator_proto::DegradedReadReply* response) { return this->decodeTest(context, request, response); }));}
     void SetMessageAllocatorFor_decodeTest(
         ::grpc::MessageAllocator< ::coordinator_proto::KeyAndClientIP, ::coordinator_proto::DegradedReadReply>* allocator) {
-      ::grpc::internal::MethodHandler* const handler = ::grpc::Service::GetHandler(17);
+      ::grpc::internal::MethodHandler* const handler = ::grpc::Service::GetHandler(16);
       static_cast<::grpc::internal::CallbackUnaryHandler< ::coordinator_proto::KeyAndClientIP, ::coordinator_proto::DegradedReadReply>*>(handler)
               ->SetMessageAllocator(allocator);
     }
@@ -1391,7 +1317,7 @@ class coordinatorService final {
     virtual ::grpc::ServerUnaryReactor* decodeTest(
       ::grpc::CallbackServerContext* /*context*/, const ::coordinator_proto::KeyAndClientIP* /*request*/, ::coordinator_proto::DegradedReadReply* /*response*/)  { return nullptr; }
   };
-  typedef WithCallbackMethod_sayHelloToCoordinator<WithCallbackMethod_checkalive<WithCallbackMethod_setParameter<WithCallbackMethod_reportCommitAbort<WithCallbackMethod_checkCommitAbort<WithCallbackMethod_uploadSetValue<WithCallbackMethod_uploadObjectValue<WithCallbackMethod_uploadSubsetValue<WithCallbackMethod_uploadAppendValue<WithCallbackMethod_getStripe<WithCallbackMethod_getBlocks<WithCallbackMethod_getObject<WithCallbackMethod_getDegradedReadBlock<WithCallbackMethod_getRecovery<WithCallbackMethod_fullNodeRecovery<WithCallbackMethod_delByStripe<WithCallbackMethod_listStripes<WithCallbackMethod_decodeTest<Service > > > > > > > > > > > > > > > > > > CallbackService;
+  typedef WithCallbackMethod_sayHelloToCoordinator<WithCallbackMethod_checkalive<WithCallbackMethod_setParameter<WithCallbackMethod_reportCommitAbort<WithCallbackMethod_checkCommitAbort<WithCallbackMethod_uploadSetValue<WithCallbackMethod_uploadObjectValue<WithCallbackMethod_uploadSubsetValue<WithCallbackMethod_getStripe<WithCallbackMethod_getBlocks<WithCallbackMethod_getObject<WithCallbackMethod_getDegradedReadBlock<WithCallbackMethod_getRecovery<WithCallbackMethod_fullNodeRecovery<WithCallbackMethod_delByStripe<WithCallbackMethod_listStripes<WithCallbackMethod_decodeTest<Service > > > > > > > > > > > > > > > > > CallbackService;
   typedef CallbackService ExperimentalCallbackService;
   template <class BaseClass>
   class WithGenericMethod_sayHelloToCoordinator : public BaseClass {
@@ -1530,29 +1456,12 @@ class coordinatorService final {
     }
   };
   template <class BaseClass>
-  class WithGenericMethod_uploadAppendValue : public BaseClass {
-   private:
-    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
-   public:
-    WithGenericMethod_uploadAppendValue() {
-      ::grpc::Service::MarkMethodGeneric(8);
-    }
-    ~WithGenericMethod_uploadAppendValue() override {
-      BaseClassMustBeDerivedFromService(this);
-    }
-    // disable synchronous version of this method
-    ::grpc::Status uploadAppendValue(::grpc::ServerContext* /*context*/, const ::coordinator_proto::RequestProxyIPPort* /*request*/, ::coordinator_proto::ReplyProxyIPsPorts* /*response*/) override {
-      abort();
-      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
-    }
-  };
-  template <class BaseClass>
   class WithGenericMethod_getStripe : public BaseClass {
    private:
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithGenericMethod_getStripe() {
-      ::grpc::Service::MarkMethodGeneric(9);
+      ::grpc::Service::MarkMethodGeneric(8);
     }
     ~WithGenericMethod_getStripe() override {
       BaseClassMustBeDerivedFromService(this);
@@ -1569,7 +1478,7 @@ class coordinatorService final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithGenericMethod_getBlocks() {
-      ::grpc::Service::MarkMethodGeneric(10);
+      ::grpc::Service::MarkMethodGeneric(9);
     }
     ~WithGenericMethod_getBlocks() override {
       BaseClassMustBeDerivedFromService(this);
@@ -1586,7 +1495,7 @@ class coordinatorService final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithGenericMethod_getObject() {
-      ::grpc::Service::MarkMethodGeneric(11);
+      ::grpc::Service::MarkMethodGeneric(10);
     }
     ~WithGenericMethod_getObject() override {
       BaseClassMustBeDerivedFromService(this);
@@ -1603,7 +1512,7 @@ class coordinatorService final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithGenericMethod_getDegradedReadBlock() {
-      ::grpc::Service::MarkMethodGeneric(12);
+      ::grpc::Service::MarkMethodGeneric(11);
     }
     ~WithGenericMethod_getDegradedReadBlock() override {
       BaseClassMustBeDerivedFromService(this);
@@ -1620,7 +1529,7 @@ class coordinatorService final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithGenericMethod_getRecovery() {
-      ::grpc::Service::MarkMethodGeneric(13);
+      ::grpc::Service::MarkMethodGeneric(12);
     }
     ~WithGenericMethod_getRecovery() override {
       BaseClassMustBeDerivedFromService(this);
@@ -1637,7 +1546,7 @@ class coordinatorService final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithGenericMethod_fullNodeRecovery() {
-      ::grpc::Service::MarkMethodGeneric(14);
+      ::grpc::Service::MarkMethodGeneric(13);
     }
     ~WithGenericMethod_fullNodeRecovery() override {
       BaseClassMustBeDerivedFromService(this);
@@ -1654,7 +1563,7 @@ class coordinatorService final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithGenericMethod_delByStripe() {
-      ::grpc::Service::MarkMethodGeneric(15);
+      ::grpc::Service::MarkMethodGeneric(14);
     }
     ~WithGenericMethod_delByStripe() override {
       BaseClassMustBeDerivedFromService(this);
@@ -1671,7 +1580,7 @@ class coordinatorService final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithGenericMethod_listStripes() {
-      ::grpc::Service::MarkMethodGeneric(16);
+      ::grpc::Service::MarkMethodGeneric(15);
     }
     ~WithGenericMethod_listStripes() override {
       BaseClassMustBeDerivedFromService(this);
@@ -1688,7 +1597,7 @@ class coordinatorService final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithGenericMethod_decodeTest() {
-      ::grpc::Service::MarkMethodGeneric(17);
+      ::grpc::Service::MarkMethodGeneric(16);
     }
     ~WithGenericMethod_decodeTest() override {
       BaseClassMustBeDerivedFromService(this);
@@ -1860,32 +1769,12 @@ class coordinatorService final {
     }
   };
   template <class BaseClass>
-  class WithRawMethod_uploadAppendValue : public BaseClass {
-   private:
-    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
-   public:
-    WithRawMethod_uploadAppendValue() {
-      ::grpc::Service::MarkMethodRaw(8);
-    }
-    ~WithRawMethod_uploadAppendValue() override {
-      BaseClassMustBeDerivedFromService(this);
-    }
-    // disable synchronous version of this method
-    ::grpc::Status uploadAppendValue(::grpc::ServerContext* /*context*/, const ::coordinator_proto::RequestProxyIPPort* /*request*/, ::coordinator_proto::ReplyProxyIPsPorts* /*response*/) override {
-      abort();
-      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
-    }
-    void RequestuploadAppendValue(::grpc::ServerContext* context, ::grpc::ByteBuffer* request, ::grpc::ServerAsyncResponseWriter< ::grpc::ByteBuffer>* response, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
-      ::grpc::Service::RequestAsyncUnary(8, context, request, response, new_call_cq, notification_cq, tag);
-    }
-  };
-  template <class BaseClass>
   class WithRawMethod_getStripe : public BaseClass {
    private:
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithRawMethod_getStripe() {
-      ::grpc::Service::MarkMethodRaw(9);
+      ::grpc::Service::MarkMethodRaw(8);
     }
     ~WithRawMethod_getStripe() override {
       BaseClassMustBeDerivedFromService(this);
@@ -1896,7 +1785,7 @@ class coordinatorService final {
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
     void RequestgetStripe(::grpc::ServerContext* context, ::grpc::ByteBuffer* request, ::grpc::ServerAsyncResponseWriter< ::grpc::ByteBuffer>* response, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
-      ::grpc::Service::RequestAsyncUnary(9, context, request, response, new_call_cq, notification_cq, tag);
+      ::grpc::Service::RequestAsyncUnary(8, context, request, response, new_call_cq, notification_cq, tag);
     }
   };
   template <class BaseClass>
@@ -1905,7 +1794,7 @@ class coordinatorService final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithRawMethod_getBlocks() {
-      ::grpc::Service::MarkMethodRaw(10);
+      ::grpc::Service::MarkMethodRaw(9);
     }
     ~WithRawMethod_getBlocks() override {
       BaseClassMustBeDerivedFromService(this);
@@ -1916,7 +1805,7 @@ class coordinatorService final {
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
     void RequestgetBlocks(::grpc::ServerContext* context, ::grpc::ByteBuffer* request, ::grpc::ServerAsyncResponseWriter< ::grpc::ByteBuffer>* response, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
-      ::grpc::Service::RequestAsyncUnary(10, context, request, response, new_call_cq, notification_cq, tag);
+      ::grpc::Service::RequestAsyncUnary(9, context, request, response, new_call_cq, notification_cq, tag);
     }
   };
   template <class BaseClass>
@@ -1925,7 +1814,7 @@ class coordinatorService final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithRawMethod_getObject() {
-      ::grpc::Service::MarkMethodRaw(11);
+      ::grpc::Service::MarkMethodRaw(10);
     }
     ~WithRawMethod_getObject() override {
       BaseClassMustBeDerivedFromService(this);
@@ -1936,7 +1825,7 @@ class coordinatorService final {
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
     void RequestgetObject(::grpc::ServerContext* context, ::grpc::ByteBuffer* request, ::grpc::ServerAsyncResponseWriter< ::grpc::ByteBuffer>* response, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
-      ::grpc::Service::RequestAsyncUnary(11, context, request, response, new_call_cq, notification_cq, tag);
+      ::grpc::Service::RequestAsyncUnary(10, context, request, response, new_call_cq, notification_cq, tag);
     }
   };
   template <class BaseClass>
@@ -1945,7 +1834,7 @@ class coordinatorService final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithRawMethod_getDegradedReadBlock() {
-      ::grpc::Service::MarkMethodRaw(12);
+      ::grpc::Service::MarkMethodRaw(11);
     }
     ~WithRawMethod_getDegradedReadBlock() override {
       BaseClassMustBeDerivedFromService(this);
@@ -1956,7 +1845,7 @@ class coordinatorService final {
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
     void RequestgetDegradedReadBlock(::grpc::ServerContext* context, ::grpc::ByteBuffer* request, ::grpc::ServerAsyncResponseWriter< ::grpc::ByteBuffer>* response, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
-      ::grpc::Service::RequestAsyncUnary(12, context, request, response, new_call_cq, notification_cq, tag);
+      ::grpc::Service::RequestAsyncUnary(11, context, request, response, new_call_cq, notification_cq, tag);
     }
   };
   template <class BaseClass>
@@ -1965,7 +1854,7 @@ class coordinatorService final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithRawMethod_getRecovery() {
-      ::grpc::Service::MarkMethodRaw(13);
+      ::grpc::Service::MarkMethodRaw(12);
     }
     ~WithRawMethod_getRecovery() override {
       BaseClassMustBeDerivedFromService(this);
@@ -1976,7 +1865,7 @@ class coordinatorService final {
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
     void RequestgetRecovery(::grpc::ServerContext* context, ::grpc::ByteBuffer* request, ::grpc::ServerAsyncResponseWriter< ::grpc::ByteBuffer>* response, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
-      ::grpc::Service::RequestAsyncUnary(13, context, request, response, new_call_cq, notification_cq, tag);
+      ::grpc::Service::RequestAsyncUnary(12, context, request, response, new_call_cq, notification_cq, tag);
     }
   };
   template <class BaseClass>
@@ -1985,7 +1874,7 @@ class coordinatorService final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithRawMethod_fullNodeRecovery() {
-      ::grpc::Service::MarkMethodRaw(14);
+      ::grpc::Service::MarkMethodRaw(13);
     }
     ~WithRawMethod_fullNodeRecovery() override {
       BaseClassMustBeDerivedFromService(this);
@@ -1996,7 +1885,7 @@ class coordinatorService final {
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
     void RequestfullNodeRecovery(::grpc::ServerContext* context, ::grpc::ByteBuffer* request, ::grpc::ServerAsyncResponseWriter< ::grpc::ByteBuffer>* response, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
-      ::grpc::Service::RequestAsyncUnary(14, context, request, response, new_call_cq, notification_cq, tag);
+      ::grpc::Service::RequestAsyncUnary(13, context, request, response, new_call_cq, notification_cq, tag);
     }
   };
   template <class BaseClass>
@@ -2005,7 +1894,7 @@ class coordinatorService final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithRawMethod_delByStripe() {
-      ::grpc::Service::MarkMethodRaw(15);
+      ::grpc::Service::MarkMethodRaw(14);
     }
     ~WithRawMethod_delByStripe() override {
       BaseClassMustBeDerivedFromService(this);
@@ -2016,7 +1905,7 @@ class coordinatorService final {
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
     void RequestdelByStripe(::grpc::ServerContext* context, ::grpc::ByteBuffer* request, ::grpc::ServerAsyncResponseWriter< ::grpc::ByteBuffer>* response, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
-      ::grpc::Service::RequestAsyncUnary(15, context, request, response, new_call_cq, notification_cq, tag);
+      ::grpc::Service::RequestAsyncUnary(14, context, request, response, new_call_cq, notification_cq, tag);
     }
   };
   template <class BaseClass>
@@ -2025,7 +1914,7 @@ class coordinatorService final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithRawMethod_listStripes() {
-      ::grpc::Service::MarkMethodRaw(16);
+      ::grpc::Service::MarkMethodRaw(15);
     }
     ~WithRawMethod_listStripes() override {
       BaseClassMustBeDerivedFromService(this);
@@ -2036,7 +1925,7 @@ class coordinatorService final {
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
     void RequestlistStripes(::grpc::ServerContext* context, ::grpc::ByteBuffer* request, ::grpc::ServerAsyncResponseWriter< ::grpc::ByteBuffer>* response, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
-      ::grpc::Service::RequestAsyncUnary(16, context, request, response, new_call_cq, notification_cq, tag);
+      ::grpc::Service::RequestAsyncUnary(15, context, request, response, new_call_cq, notification_cq, tag);
     }
   };
   template <class BaseClass>
@@ -2045,7 +1934,7 @@ class coordinatorService final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithRawMethod_decodeTest() {
-      ::grpc::Service::MarkMethodRaw(17);
+      ::grpc::Service::MarkMethodRaw(16);
     }
     ~WithRawMethod_decodeTest() override {
       BaseClassMustBeDerivedFromService(this);
@@ -2056,7 +1945,7 @@ class coordinatorService final {
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
     void RequestdecodeTest(::grpc::ServerContext* context, ::grpc::ByteBuffer* request, ::grpc::ServerAsyncResponseWriter< ::grpc::ByteBuffer>* response, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
-      ::grpc::Service::RequestAsyncUnary(17, context, request, response, new_call_cq, notification_cq, tag);
+      ::grpc::Service::RequestAsyncUnary(16, context, request, response, new_call_cq, notification_cq, tag);
     }
   };
   template <class BaseClass>
@@ -2236,34 +2125,12 @@ class coordinatorService final {
       ::grpc::CallbackServerContext* /*context*/, const ::grpc::ByteBuffer* /*request*/, ::grpc::ByteBuffer* /*response*/)  { return nullptr; }
   };
   template <class BaseClass>
-  class WithRawCallbackMethod_uploadAppendValue : public BaseClass {
-   private:
-    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
-   public:
-    WithRawCallbackMethod_uploadAppendValue() {
-      ::grpc::Service::MarkMethodRawCallback(8,
-          new ::grpc::internal::CallbackUnaryHandler< ::grpc::ByteBuffer, ::grpc::ByteBuffer>(
-            [this](
-                   ::grpc::CallbackServerContext* context, const ::grpc::ByteBuffer* request, ::grpc::ByteBuffer* response) { return this->uploadAppendValue(context, request, response); }));
-    }
-    ~WithRawCallbackMethod_uploadAppendValue() override {
-      BaseClassMustBeDerivedFromService(this);
-    }
-    // disable synchronous version of this method
-    ::grpc::Status uploadAppendValue(::grpc::ServerContext* /*context*/, const ::coordinator_proto::RequestProxyIPPort* /*request*/, ::coordinator_proto::ReplyProxyIPsPorts* /*response*/) override {
-      abort();
-      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
-    }
-    virtual ::grpc::ServerUnaryReactor* uploadAppendValue(
-      ::grpc::CallbackServerContext* /*context*/, const ::grpc::ByteBuffer* /*request*/, ::grpc::ByteBuffer* /*response*/)  { return nullptr; }
-  };
-  template <class BaseClass>
   class WithRawCallbackMethod_getStripe : public BaseClass {
    private:
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithRawCallbackMethod_getStripe() {
-      ::grpc::Service::MarkMethodRawCallback(9,
+      ::grpc::Service::MarkMethodRawCallback(8,
           new ::grpc::internal::CallbackUnaryHandler< ::grpc::ByteBuffer, ::grpc::ByteBuffer>(
             [this](
                    ::grpc::CallbackServerContext* context, const ::grpc::ByteBuffer* request, ::grpc::ByteBuffer* response) { return this->getStripe(context, request, response); }));
@@ -2285,7 +2152,7 @@ class coordinatorService final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithRawCallbackMethod_getBlocks() {
-      ::grpc::Service::MarkMethodRawCallback(10,
+      ::grpc::Service::MarkMethodRawCallback(9,
           new ::grpc::internal::CallbackUnaryHandler< ::grpc::ByteBuffer, ::grpc::ByteBuffer>(
             [this](
                    ::grpc::CallbackServerContext* context, const ::grpc::ByteBuffer* request, ::grpc::ByteBuffer* response) { return this->getBlocks(context, request, response); }));
@@ -2307,7 +2174,7 @@ class coordinatorService final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithRawCallbackMethod_getObject() {
-      ::grpc::Service::MarkMethodRawCallback(11,
+      ::grpc::Service::MarkMethodRawCallback(10,
           new ::grpc::internal::CallbackUnaryHandler< ::grpc::ByteBuffer, ::grpc::ByteBuffer>(
             [this](
                    ::grpc::CallbackServerContext* context, const ::grpc::ByteBuffer* request, ::grpc::ByteBuffer* response) { return this->getObject(context, request, response); }));
@@ -2329,7 +2196,7 @@ class coordinatorService final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithRawCallbackMethod_getDegradedReadBlock() {
-      ::grpc::Service::MarkMethodRawCallback(12,
+      ::grpc::Service::MarkMethodRawCallback(11,
           new ::grpc::internal::CallbackUnaryHandler< ::grpc::ByteBuffer, ::grpc::ByteBuffer>(
             [this](
                    ::grpc::CallbackServerContext* context, const ::grpc::ByteBuffer* request, ::grpc::ByteBuffer* response) { return this->getDegradedReadBlock(context, request, response); }));
@@ -2351,7 +2218,7 @@ class coordinatorService final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithRawCallbackMethod_getRecovery() {
-      ::grpc::Service::MarkMethodRawCallback(13,
+      ::grpc::Service::MarkMethodRawCallback(12,
           new ::grpc::internal::CallbackUnaryHandler< ::grpc::ByteBuffer, ::grpc::ByteBuffer>(
             [this](
                    ::grpc::CallbackServerContext* context, const ::grpc::ByteBuffer* request, ::grpc::ByteBuffer* response) { return this->getRecovery(context, request, response); }));
@@ -2373,7 +2240,7 @@ class coordinatorService final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithRawCallbackMethod_fullNodeRecovery() {
-      ::grpc::Service::MarkMethodRawCallback(14,
+      ::grpc::Service::MarkMethodRawCallback(13,
           new ::grpc::internal::CallbackUnaryHandler< ::grpc::ByteBuffer, ::grpc::ByteBuffer>(
             [this](
                    ::grpc::CallbackServerContext* context, const ::grpc::ByteBuffer* request, ::grpc::ByteBuffer* response) { return this->fullNodeRecovery(context, request, response); }));
@@ -2395,7 +2262,7 @@ class coordinatorService final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithRawCallbackMethod_delByStripe() {
-      ::grpc::Service::MarkMethodRawCallback(15,
+      ::grpc::Service::MarkMethodRawCallback(14,
           new ::grpc::internal::CallbackUnaryHandler< ::grpc::ByteBuffer, ::grpc::ByteBuffer>(
             [this](
                    ::grpc::CallbackServerContext* context, const ::grpc::ByteBuffer* request, ::grpc::ByteBuffer* response) { return this->delByStripe(context, request, response); }));
@@ -2417,7 +2284,7 @@ class coordinatorService final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithRawCallbackMethod_listStripes() {
-      ::grpc::Service::MarkMethodRawCallback(16,
+      ::grpc::Service::MarkMethodRawCallback(15,
           new ::grpc::internal::CallbackUnaryHandler< ::grpc::ByteBuffer, ::grpc::ByteBuffer>(
             [this](
                    ::grpc::CallbackServerContext* context, const ::grpc::ByteBuffer* request, ::grpc::ByteBuffer* response) { return this->listStripes(context, request, response); }));
@@ -2439,7 +2306,7 @@ class coordinatorService final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithRawCallbackMethod_decodeTest() {
-      ::grpc::Service::MarkMethodRawCallback(17,
+      ::grpc::Service::MarkMethodRawCallback(16,
           new ::grpc::internal::CallbackUnaryHandler< ::grpc::ByteBuffer, ::grpc::ByteBuffer>(
             [this](
                    ::grpc::CallbackServerContext* context, const ::grpc::ByteBuffer* request, ::grpc::ByteBuffer* response) { return this->decodeTest(context, request, response); }));
@@ -2672,39 +2539,12 @@ class coordinatorService final {
     virtual ::grpc::Status StreameduploadSubsetValue(::grpc::ServerContext* context, ::grpc::ServerUnaryStreamer< ::coordinator_proto::RequestProxyIPPort,::coordinator_proto::ReplyProxyIPsPorts>* server_unary_streamer) = 0;
   };
   template <class BaseClass>
-  class WithStreamedUnaryMethod_uploadAppendValue : public BaseClass {
-   private:
-    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
-   public:
-    WithStreamedUnaryMethod_uploadAppendValue() {
-      ::grpc::Service::MarkMethodStreamed(8,
-        new ::grpc::internal::StreamedUnaryHandler<
-          ::coordinator_proto::RequestProxyIPPort, ::coordinator_proto::ReplyProxyIPsPorts>(
-            [this](::grpc::ServerContext* context,
-                   ::grpc::ServerUnaryStreamer<
-                     ::coordinator_proto::RequestProxyIPPort, ::coordinator_proto::ReplyProxyIPsPorts>* streamer) {
-                       return this->StreameduploadAppendValue(context,
-                         streamer);
-                  }));
-    }
-    ~WithStreamedUnaryMethod_uploadAppendValue() override {
-      BaseClassMustBeDerivedFromService(this);
-    }
-    // disable regular version of this method
-    ::grpc::Status uploadAppendValue(::grpc::ServerContext* /*context*/, const ::coordinator_proto::RequestProxyIPPort* /*request*/, ::coordinator_proto::ReplyProxyIPsPorts* /*response*/) override {
-      abort();
-      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
-    }
-    // replace default version of method with streamed unary
-    virtual ::grpc::Status StreameduploadAppendValue(::grpc::ServerContext* context, ::grpc::ServerUnaryStreamer< ::coordinator_proto::RequestProxyIPPort,::coordinator_proto::ReplyProxyIPsPorts>* server_unary_streamer) = 0;
-  };
-  template <class BaseClass>
   class WithStreamedUnaryMethod_getStripe : public BaseClass {
    private:
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithStreamedUnaryMethod_getStripe() {
-      ::grpc::Service::MarkMethodStreamed(9,
+      ::grpc::Service::MarkMethodStreamed(8,
         new ::grpc::internal::StreamedUnaryHandler<
           ::coordinator_proto::KeyAndClientIP, ::coordinator_proto::ReplyProxyIPsPorts>(
             [this](::grpc::ServerContext* context,
@@ -2731,7 +2571,7 @@ class coordinatorService final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithStreamedUnaryMethod_getBlocks() {
-      ::grpc::Service::MarkMethodStreamed(10,
+      ::grpc::Service::MarkMethodStreamed(9,
         new ::grpc::internal::StreamedUnaryHandler<
           ::coordinator_proto::BlockIDsAndClientIP, ::coordinator_proto::ReplyProxyIPsPorts>(
             [this](::grpc::ServerContext* context,
@@ -2758,7 +2598,7 @@ class coordinatorService final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithStreamedUnaryMethod_getObject() {
-      ::grpc::Service::MarkMethodStreamed(11,
+      ::grpc::Service::MarkMethodStreamed(10,
         new ::grpc::internal::StreamedUnaryHandler<
           ::coordinator_proto::KeyAndClientIP, ::coordinator_proto::ReplyProxyIPsPorts>(
             [this](::grpc::ServerContext* context,
@@ -2785,7 +2625,7 @@ class coordinatorService final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithStreamedUnaryMethod_getDegradedReadBlock() {
-      ::grpc::Service::MarkMethodStreamed(12,
+      ::grpc::Service::MarkMethodStreamed(11,
         new ::grpc::internal::StreamedUnaryHandler<
           ::coordinator_proto::KeyAndClientIP, ::coordinator_proto::DegradedReadReply>(
             [this](::grpc::ServerContext* context,
@@ -2812,7 +2652,7 @@ class coordinatorService final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithStreamedUnaryMethod_getRecovery() {
-      ::grpc::Service::MarkMethodStreamed(13,
+      ::grpc::Service::MarkMethodStreamed(12,
         new ::grpc::internal::StreamedUnaryHandler<
           ::coordinator_proto::KeyAndClientIP, ::coordinator_proto::RecoveryReply>(
             [this](::grpc::ServerContext* context,
@@ -2839,7 +2679,7 @@ class coordinatorService final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithStreamedUnaryMethod_fullNodeRecovery() {
-      ::grpc::Service::MarkMethodStreamed(14,
+      ::grpc::Service::MarkMethodStreamed(13,
         new ::grpc::internal::StreamedUnaryHandler<
           ::coordinator_proto::NodeIdFromClient, ::coordinator_proto::RepBlockNum>(
             [this](::grpc::ServerContext* context,
@@ -2866,7 +2706,7 @@ class coordinatorService final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithStreamedUnaryMethod_delByStripe() {
-      ::grpc::Service::MarkMethodStreamed(15,
+      ::grpc::Service::MarkMethodStreamed(14,
         new ::grpc::internal::StreamedUnaryHandler<
           ::coordinator_proto::StripeIdFromClient, ::coordinator_proto::RepIfDeling>(
             [this](::grpc::ServerContext* context,
@@ -2893,7 +2733,7 @@ class coordinatorService final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithStreamedUnaryMethod_listStripes() {
-      ::grpc::Service::MarkMethodStreamed(16,
+      ::grpc::Service::MarkMethodStreamed(15,
         new ::grpc::internal::StreamedUnaryHandler<
           ::coordinator_proto::RequestToCoordinator, ::coordinator_proto::RepStripeIds>(
             [this](::grpc::ServerContext* context,
@@ -2920,7 +2760,7 @@ class coordinatorService final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithStreamedUnaryMethod_decodeTest() {
-      ::grpc::Service::MarkMethodStreamed(17,
+      ::grpc::Service::MarkMethodStreamed(16,
         new ::grpc::internal::StreamedUnaryHandler<
           ::coordinator_proto::KeyAndClientIP, ::coordinator_proto::DegradedReadReply>(
             [this](::grpc::ServerContext* context,
@@ -2941,9 +2781,9 @@ class coordinatorService final {
     // replace default version of method with streamed unary
     virtual ::grpc::Status StreameddecodeTest(::grpc::ServerContext* context, ::grpc::ServerUnaryStreamer< ::coordinator_proto::KeyAndClientIP,::coordinator_proto::DegradedReadReply>* server_unary_streamer) = 0;
   };
-  typedef WithStreamedUnaryMethod_sayHelloToCoordinator<WithStreamedUnaryMethod_checkalive<WithStreamedUnaryMethod_setParameter<WithStreamedUnaryMethod_reportCommitAbort<WithStreamedUnaryMethod_checkCommitAbort<WithStreamedUnaryMethod_uploadSetValue<WithStreamedUnaryMethod_uploadObjectValue<WithStreamedUnaryMethod_uploadSubsetValue<WithStreamedUnaryMethod_uploadAppendValue<WithStreamedUnaryMethod_getStripe<WithStreamedUnaryMethod_getBlocks<WithStreamedUnaryMethod_getObject<WithStreamedUnaryMethod_getDegradedReadBlock<WithStreamedUnaryMethod_getRecovery<WithStreamedUnaryMethod_fullNodeRecovery<WithStreamedUnaryMethod_delByStripe<WithStreamedUnaryMethod_listStripes<WithStreamedUnaryMethod_decodeTest<Service > > > > > > > > > > > > > > > > > > StreamedUnaryService;
+  typedef WithStreamedUnaryMethod_sayHelloToCoordinator<WithStreamedUnaryMethod_checkalive<WithStreamedUnaryMethod_setParameter<WithStreamedUnaryMethod_reportCommitAbort<WithStreamedUnaryMethod_checkCommitAbort<WithStreamedUnaryMethod_uploadSetValue<WithStreamedUnaryMethod_uploadObjectValue<WithStreamedUnaryMethod_uploadSubsetValue<WithStreamedUnaryMethod_getStripe<WithStreamedUnaryMethod_getBlocks<WithStreamedUnaryMethod_getObject<WithStreamedUnaryMethod_getDegradedReadBlock<WithStreamedUnaryMethod_getRecovery<WithStreamedUnaryMethod_fullNodeRecovery<WithStreamedUnaryMethod_delByStripe<WithStreamedUnaryMethod_listStripes<WithStreamedUnaryMethod_decodeTest<Service > > > > > > > > > > > > > > > > > StreamedUnaryService;
   typedef Service SplitStreamedService;
-  typedef WithStreamedUnaryMethod_sayHelloToCoordinator<WithStreamedUnaryMethod_checkalive<WithStreamedUnaryMethod_setParameter<WithStreamedUnaryMethod_reportCommitAbort<WithStreamedUnaryMethod_checkCommitAbort<WithStreamedUnaryMethod_uploadSetValue<WithStreamedUnaryMethod_uploadObjectValue<WithStreamedUnaryMethod_uploadSubsetValue<WithStreamedUnaryMethod_uploadAppendValue<WithStreamedUnaryMethod_getStripe<WithStreamedUnaryMethod_getBlocks<WithStreamedUnaryMethod_getObject<WithStreamedUnaryMethod_getDegradedReadBlock<WithStreamedUnaryMethod_getRecovery<WithStreamedUnaryMethod_fullNodeRecovery<WithStreamedUnaryMethod_delByStripe<WithStreamedUnaryMethod_listStripes<WithStreamedUnaryMethod_decodeTest<Service > > > > > > > > > > > > > > > > > > StreamedService;
+  typedef WithStreamedUnaryMethod_sayHelloToCoordinator<WithStreamedUnaryMethod_checkalive<WithStreamedUnaryMethod_setParameter<WithStreamedUnaryMethod_reportCommitAbort<WithStreamedUnaryMethod_checkCommitAbort<WithStreamedUnaryMethod_uploadSetValue<WithStreamedUnaryMethod_uploadObjectValue<WithStreamedUnaryMethod_uploadSubsetValue<WithStreamedUnaryMethod_getStripe<WithStreamedUnaryMethod_getBlocks<WithStreamedUnaryMethod_getObject<WithStreamedUnaryMethod_getDegradedReadBlock<WithStreamedUnaryMethod_getRecovery<WithStreamedUnaryMethod_fullNodeRecovery<WithStreamedUnaryMethod_delByStripe<WithStreamedUnaryMethod_listStripes<WithStreamedUnaryMethod_decodeTest<Service > > > > > > > > > > > > > > > > > StreamedService;
 };
 
 }  // namespace coordinator_proto

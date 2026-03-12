@@ -15,8 +15,6 @@
     <ClusterNum>21</ClusterNum>
     <CoordinatorIP>10.10.1.2</CoordinatorIP>
     <CoordinatorPort>55555</CoordinatorPort>
-    <!-- AppendMode: REP_MODE; CACHED_MODE -->
-    <AppendMode>CACHED_MODE</AppendMode>
     <alpha>2</alpha>
     <!-- LRC: AzureLRC; OptimalLRC; UniformLRC; ShuffledUniformLRC -->
     <CodeType>UniformLRC</CodeType>

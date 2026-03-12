@@ -31,8 +31,6 @@ service coordinatorService {
   rpc uploadSetValue (RequestProxyIPPort) returns (ReplyProxyIPsPorts) {};
   rpc uploadObjectValue (RequestProxyIPPort) returns (ReplyProxyIPsPorts) {};
   rpc uploadSubsetValue (RequestProxyIPPort) returns (ReplyProxyIPsPorts) {};
-  // append
-  rpc uploadAppendValue (RequestProxyIPPort) returns (ReplyProxyIPsPorts) {};
   // get
   rpc getStripe(KeyAndClientIP) returns (ReplyProxyIPsPorts) {};
   rpc getBlocks(BlockIDsAndClientIP) returns (ReplyProxyIPsPorts) {};
@@ -81,7 +79,6 @@ message ReplyFromCoordinator {
 message RequestProxyIPPort {
   string key = 1;
   uint64 valuesizebytes = 2;
-  string append_mode = 3;
 }
 
 message ReplyProxyIPPort {

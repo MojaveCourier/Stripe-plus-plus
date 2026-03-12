@@ -16,7 +16,6 @@ namespace ECProject
   void Config::validateConfig() const
   {
     assert(BlockSize % UnitSize == 0 && "Error: BlockSize must be divisible by UnitSize");
-    assert((AppendMode == "REP_MODE" || AppendMode == "CACHED_MODE") && "Error: AppendMode must be REP_MODE or CACHED_MODE");
     assert((CodeType == "AzureLRC" || CodeType == "OptimalLRC" || CodeType == "UniformLRC" || CodeType == "ShuffledUniformLRC") && "Error: CodeType must be AzureLRC, OptimalLRC, or UniformLRC");
     assert(DatanodeNumPerCluster > 0 && "Error: DatanodeNumPerCluster must be greater than 0");
     assert(ClusterNum > 0 && "Error: ClusterNum must be greater than 0");
@@ -86,8 +85,6 @@ namespace ECProject
       CoordinatorIP = std::string(elem->GetText());
     if (auto elem = root->FirstChildElement("CoordinatorPort"))
       CoordinatorPort = std::stoi(elem->GetText());
-    if (auto elem = root->FirstChildElement("AppendMode"))
-      AppendMode = std::string(elem->GetText());
     if (auto elem = root->FirstChildElement("CodingMode"))
       CodingMode = std::string(elem->GetText());
     if (auto elem = root->FirstChildElement("ObjectPlaceMode"))
@@ -110,7 +107,6 @@ namespace ECProject
     std::cout << "  ClusterNum: " << (int)ClusterNum << " clusters" << std::endl;
     std::cout << "  CoordinatorIP: " << CoordinatorIP << std::endl;
     std::cout << "  CoordinatorPort: " << CoordinatorPort << std::endl;
-    std::cout << "  AppendMode: " << AppendMode << std::endl;
     std::cout << "  CodeType: " << CodeType << std::endl;
   }
 }

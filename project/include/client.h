@@ -40,28 +40,22 @@ namespace ECProject
       m_toolbox = ECProject::ToolBox::getInstance();
       m_pre_allocated_buffer = static_cast<char*>(std::aligned_alloc(32, static_cast<size_t>(m_sys_config->BlockSize) * static_cast<size_t>(m_sys_config->n)));
       memset(m_pre_allocated_buffer, 0x00, (m_sys_config->BlockSize) * static_cast<size_t>(m_sys_config->n));
-      if (m_sys_config->AppendMode == "CACHED_MODE")
+      m_cached_buffer = new char *[m_sys_config->r + m_sys_config->z];
+      for (int i = 0; i < m_sys_config->r + m_sys_config->z; i++)
       {
-        m_cached_buffer = new char *[m_sys_config->r + m_sys_config->z];
-        for (int i = 0; i < m_sys_config->r + m_sys_config->z; i++)
-        {
-          m_cached_buffer[i] = new char[m_sys_config->BlockSize];
-          memset(m_cached_buffer[i], 0, m_sys_config->BlockSize);
-        }
+        m_cached_buffer[i] = new char[m_sys_config->BlockSize];
+        memset(m_cached_buffer[i], 0, m_sys_config->BlockSize);
       }
     }
 
     ~Client()
     {
       delete[] m_pre_allocated_buffer;
-      if (m_sys_config->AppendMode == "CACHED_MODE")
+      for (int i = 0; i < m_sys_config->r + m_sys_config->z; i++)
       {
-        for (int i = 0; i < m_sys_config->r + m_sys_config->z; i++)
-        {
-          delete[] m_cached_buffer[i];
-        }
-        delete[] m_cached_buffer;
+        delete[] m_cached_buffer[i];
       }
+      delete[] m_cached_buffer;
     }
 
     std::string sayHelloToCoordinatorByGrpc(std::string hello);
@@ -78,7 +72,7 @@ namespace ECProject
     std::shared_ptr<char[]> get_object(std::string key, int block_cnt);
     bool delete_stripe(int stripe_id);
     bool delete_all_stripes();
-    int get_append_slice_plans(std::string append_mode, int curr_logical_offset, int append_size, std::vector<std::vector<int>> *node_slice_sizes_per_cluster, std::vector<int> *modified_data_block_nums_per_cluster, std::vector<int> *data_ptr_size_array, int &parity_slice_size, int &parity_slice_offset);
+    int get_append_slice_plans(int curr_logical_offset, int append_size, std::vector<std::vector<int>> *node_slice_sizes_per_cluster, std::vector<int> *modified_data_block_nums_per_cluster, std::vector<int> *data_ptr_size_array, int &parity_slice_size, int &parity_slice_offset);
     void split_for_append_data_and_parity(const coordinator_proto::ReplyProxyIPsPorts *reply_proxy_ips_ports, const std::vector<char *> &cluster_slice_data, const std::vector<std::vector<int>> &node_slice_sizes_per_cluster, const std::vector<int> &modified_data_block_nums_per_cluster, std::vector<char *> &data_ptr_array, std::vector<char *> &global_parity_ptr_array, std::vector<char *> &local_parity_ptr_array);
     void split_for_set_data_and_parity(const coordinator_proto::ReplyProxyIPsPorts *reply_proxy_ips_ports, const std::vector<char *> &cluster_slice_data, const std::vector<int> &data_block_num_per_group, const std::vector<int> &global_parity_block_num_per_group, const std::vector<int> &local_parity_block_num_per_group, std::vector<char *> &data_ptr_array, std::vector<char *> &global_parity_ptr_array, std::vector<char *> &local_parity_ptr_array);
     void async_append_to_proxies(char *cluster_slice_data, std::string append_key, int cluster_slice_size, std::string proxy_ip, int proxy_port, int index, bool *if_commit_arr);

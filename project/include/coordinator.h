@@ -60,11 +60,6 @@ namespace ECProject
         grpc::ServerContext *context,
         const coordinator_proto::RequestProxyIPPort *keyValueSize,
         coordinator_proto::ReplyProxyIPsPorts *proxyIPPort) override;
-    // append
-    grpc::Status uploadAppendValue(
-        grpc::ServerContext *context,
-        const coordinator_proto::RequestProxyIPPort *keyValueSize,
-        coordinator_proto::ReplyProxyIPsPorts *proxyIPPort) override;
     // get
     grpc::Status getObject(
         grpc::ServerContext *context,
@@ -130,9 +125,7 @@ namespace ECProject
     std::vector<proxy_proto::AppendStripeDataPlacement> generate_object_upload_plan(Object *object);
     std::vector<proxy_proto::AppendStripeDataPlacement> generate_add_plans(Stripe *stripe);
     std::vector<proxy_proto::AppendStripeDataPlacement> generate_sub_add_plans(Stripe *stripe, size_t subset_size);
-    std::vector<proxy_proto::AppendStripeDataPlacement> generateAppendPlan(Stripe *stripe, int curr_logical_offset, int append_size);
     void update_stripe_info_in_node(int t_node_id, int stripe_id, int index);
-    int getClusterAppendSize(Stripe *stripe, const std::map<int, std::pair<int, int>> &block_to_slice_sizes, int curr_group_id, int parity_slice_size);
     void notify_proxies_ready(const proxy_proto::AppendStripeDataPlacement &plan);
     std::vector<int> get_recovery_group_ids(std::string code_type, int k, int r, int z, int failed_block_id);
     void init_recovery_group_lookup_table();
