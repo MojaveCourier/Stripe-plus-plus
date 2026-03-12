@@ -41,9 +41,6 @@ int main(int argc, char **argv)
     else if(parameters[4] == 2){
         code_type = "UniformLRC";
     }
-    else if(parameters[4] == 3){
-        code_type = "UniLRC";
-    }
     else if(parameters[4] == 4){
         code_type = "ShuffledUniformLRC";
     }

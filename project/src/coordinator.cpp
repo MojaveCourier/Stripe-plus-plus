@@ -511,7 +511,7 @@ namespace ECProject
     stripe->num_groups = stripe->group_to_blocks.size();
   }
 
-  void CoordinatorImpl::initialize_unilrc_and_azurelrc_stripe_placement(Stripe *stripe)
+  void CoordinatorImpl::initialize_azurelrc_stripe_placement(Stripe *stripe)
   {
     std::string code_type = m_sys_config->CodeType;
 
@@ -546,11 +546,7 @@ namespace ECProject
         blocks_info[i].block_key = std::to_string(stripe->stripe_id) + tmp + std::to_string(i - stripe->k);
         blocks_info[i].block_id = i;
         blocks_info[i].block_type = 'G';
-        if (code_type == "UniLRC")
-        {
-          blocks_info[i].map2group = int((i - stripe->k) / (stripe->r / stripe->z));
-        }
-        else if (code_type == "AzureLRC")
+        if (code_type == "AzureLRC")
         {
           blocks_info[i].map2group = int(stripe->z);
         }
@@ -869,7 +865,7 @@ namespace ECProject
       t_stripe.r = m_sys_config->r;
       t_stripe.z = m_sys_config->z;
       t_stripe.object_keys.push_back(clientID);
-      initialize_unilrc_and_azurelrc_stripe_placement(&t_stripe);
+      initialize_azurelrc_stripe_placement(&t_stripe);
       m_stripe_table[t_stripe.stripe_id] = t_stripe;
       stripe = &m_stripe_table[t_stripe.stripe_id];
     }
@@ -1020,7 +1016,7 @@ namespace ECProject
     size_t setSizeBytes = keyValueSize->valuesizebytes();
     std::string code_type = m_sys_config->CodeType;
     assert(setSizeBytes == static_cast<size_t>(m_sys_config->BlockSize) * static_cast<size_t>(m_sys_config->k) && "set size is not equal to the block stripe size!");
-    assert((code_type == "UniLRC" || code_type == "AzureLRC" || code_type == "OptimalLRC" || code_type == "UniformLRC") && "Error: code type must be UniLRC, AzureLRC, OptimalLRC, or UniformLRC!");
+    assert((code_type == "AzureLRC" || code_type == "OptimalLRC" || code_type == "UniformLRC") && "Error: code type must be AzureLRC, OptimalLRC, or UniformLRC!");
 
     Stripe t_stripe;
     t_stripe.stripe_id = m_cur_stripe_id++;
@@ -1029,9 +1025,9 @@ namespace ECProject
     t_stripe.r = m_sys_config->r;
     t_stripe.z = m_sys_config->z;
     t_stripe.object_keys.push_back(clientID);
-    if (code_type == "UniLRC" || code_type == "AzureLRC")
+    if (code_type == "AzureLRC")
     {
-      initialize_unilrc_and_azurelrc_stripe_placement(&t_stripe);
+      initialize_azurelrc_stripe_placement(&t_stripe);
     }
     else if (code_type == "OptimalLRC")
     {
@@ -1084,7 +1080,7 @@ namespace ECProject
     size_t setSizeBytes = keyValueSize->valuesizebytes();
     std::string code_type = m_sys_config->CodeType;
     assert(setSizeBytes <= static_cast<size_t>(m_sys_config->BlockSize) * static_cast<size_t>(m_sys_config->k) && "subset size is larger than the stripe size!");
-    assert((code_type == "UniLRC" || code_type == "AzureLRC" || code_type == "OptimalLRC" || code_type == "UniformLRC") && "Error: code type must be UniLRC, AzureLRC, OptimalLRC, or UniformLRC!");
+    assert((code_type == "AzureLRC" || code_type == "OptimalLRC" || code_type == "UniformLRC") && "Error: code type must be AzureLRC, OptimalLRC, or UniformLRC!");
 
     Stripe t_stripe;
     t_stripe.stripe_id = m_cur_stripe_id++;
@@ -1093,9 +1089,9 @@ namespace ECProject
     t_stripe.r = m_sys_config->r;
     t_stripe.z = m_sys_config->z;
     t_stripe.object_keys.push_back(clientID);
-    if (code_type == "UniLRC" || code_type == "AzureLRC")
+    if (code_type == "AzureLRC")
     {
-      initialize_unilrc_and_azurelrc_stripe_placement(&t_stripe);
+      initialize_azurelrc_stripe_placement(&t_stripe);
     }
     else if (code_type == "OptimalLRC")
     {
@@ -1152,21 +1148,6 @@ namespace ECProject
         {
           recovery_group_ids.push_back(i);
         }
-      }
-      else if (failed_block_id >= k + r)
-      {
-        recovery_group_ids.push_back(failed_block_id - k - r);
-      }
-      else
-      {
-        recovery_group_ids.push_back(failed_block_id / (k / z));
-      }
-    }
-    else if (code_type == "UniLRC")
-    {
-      if (failed_block_id >= k && failed_block_id < k + r)
-      {
-        recovery_group_ids.push_back((failed_block_id - k) / (r / z));
       }
       else if (failed_block_id >= k + r)
       {
@@ -1352,14 +1333,6 @@ namespace ECProject
       }
       data_block_num_per_group.push_back(0);
     }
-    else if (code_type == "UniLRC")
-    {
-      int local_data_num = k / z;
-      for (int i = 0; i < z; i++)
-      {
-        data_block_num_per_group.push_back(local_data_num);
-      }
-    }
     return data_block_num_per_group;
   }
 
@@ -1408,11 +1381,8 @@ namespace ECProject
     int stripe_id = std::stoi(keyClient->key());
     Stripe &t_stripe = m_stripe_table[stripe_id];
     int k = t_stripe.k;
-    int num_data_groups = t_stripe.num_groups;
+    int num_data_groups = t_stripe.num_groups - 1;
     std::string code_type = m_sys_config->CodeType;
-    if(code_type != "UniLRC"){
-      num_data_groups--;
-    }
     //std::cout << "[GET] getting stripe " << stripe_id << " with " << num_data_groups << " data groups" << std::endl;
     std::vector<int> block_num_per_group = get_data_block_num_per_group(k, m_sys_config->r, m_sys_config->z, code_type);
     std::vector<int> get_cluster_ids;
@@ -1626,9 +1596,6 @@ namespace ECProject
     if(code_type == "AzureLRC"){
       decode_azure_lrc(k, r, z, block_num, &recovery_block_ids, recovery_data_ptrs.data(), res, block_size, failed_block_id);
     }
-    else if(code_type == "UniLRC"){
-      decode_unilrc(k, r, z, block_num, &recovery_block_ids, recovery_data_ptrs.data(), res, block_size);
-    }
     else if(code_type == "OptimalLRC"){
       decode_optimal_lrc(k, r, z, block_num, &recovery_block_ids, recovery_data_ptrs.data(), res, block_size, failed_block_id);
     }
@@ -1658,7 +1625,7 @@ namespace ECProject
 
     if (recovery_group_ids.size() == 1)
     {
-      //assert((code_type == "UniLRC") || (code_type == "AzureLRC" && (failed_block_id < m_sys_config->k || failed_block_id >= m_sys_config->k + m_sys_config->r)));
+      //assert((code_type == "AzureLRC" && (failed_block_id < m_sys_config->k || failed_block_id >= m_sys_config->k + m_sys_config->r)));
 
       grpc::ClientContext recovery_context;
       proxy_proto::RecoveryRequest recovery_request;
@@ -1834,7 +1801,7 @@ namespace ECProject
 
     if (recovery_group_ids.size() == 1)
     {
-      //assert((code_type == "UniLRC") || (code_type == "AzureLRC" && (failed_block_id < m_sys_config->k || failed_block_id >= m_sys_config->k + m_sys_config->r)));
+      //assert((code_type == "AzureLRC" && (failed_block_id < m_sys_config->k || failed_block_id >= m_sys_config->k + m_sys_config->r)));
 
       grpc::ClientContext recovery_context;
       proxy_proto::RecoveryRequest recovery_request;

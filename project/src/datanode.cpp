@@ -394,59 +394,6 @@ namespace ECProject
         return grpc::Status::OK;
     }
 
-    /*grpc::Status DatanodeImpl::handleMergeParityWithRep(
-        grpc::ServerContext *context,
-        const datanode_proto::MergeParityInfo *merge_parity_info,
-        datanode_proto::RequestResult *response)
-    {
-        std::string block_key = merge_parity_info->block_key();
-        int block_id = merge_parity_info->block_id();
-        auto handler = [this](std::string block_key, int block_id) mutable
-        {
-            try
-            {
-                std::string targetdir = "./storage/" + std::to_string(m_port) + "/";
-                std::string readpath = targetdir + block_key;
-                if (access(readpath.c_str(), 0) == -1)
-                {
-                    std::cout << "[Datanode" << m_port << "][Merge Parity Slices] file does not exist!" << readpath << std::endl;
-                    exit(-1);
-                }
-
-                std::string writepath = targetdir + block_key;
-                std::ofstream ofs(writepath, std::ios::binary | std::ios::out | std::ios::trunc);
-                std::unique_ptr<char[]> dataBuf(new char[m_sys_config->BlockSize * m_sys_config->k]);
-                memset(dataBuf.get(), 0, m_sys_config->BlockSize * m_sys_config->k);
-                std::unique_ptr<char[]> mergedBuf(new char[m_sys_config->BlockSize]);
-                memset(mergedBuf.get(), 0, m_sys_config->BlockSize);
-
-                deserialize(readpath, dataBuf.get());
-                ECProject::encode_unilrc_w_rep_mode(m_sys_config->k, m_sys_config->r, m_sys_config->z, reinterpret_cast<unsigned char *>(dataBuf.get()), reinterpret_cast<unsigned char *>(mergedBuf.get()), m_sys_config->BlockSize, m_sys_config->UnitSize, block_id);
-
-                ofs.write(mergedBuf.get(), m_sys_config->BlockSize);
-                ofs.flush();
-                ofs.close();
-            }
-            catch (const std::exception &e)
-            {
-                std::cerr << e.what() << '\n';
-            }
-        };
-
-        try
-        {
-            std::thread my_thread(handler, block_key, block_id);
-            my_thread.detach();
-            response->set_message(true);
-        }
-        catch (const std::exception &e)
-        {
-            std::cerr << e.what() << '\n';
-        }
-
-        return grpc::Status::OK;
-    }*/
-
     grpc::Status DatanodeImpl::handleSet(
         grpc::ServerContext *context,
         const datanode_proto::SetInfo *set_info,

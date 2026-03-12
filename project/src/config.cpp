@@ -16,15 +16,10 @@ namespace ECProject
   void Config::validateConfig() const
   {
     assert(BlockSize % UnitSize == 0 && "Error: BlockSize must be divisible by UnitSize");
-    assert((AppendMode == "REP_MODE" || AppendMode == "UNILRC_MODE" || AppendMode == "CACHED_MODE") && "Error: AppendMode must be REP_MODE, UNILRC_MODE, or CACHED_MODE");
-    assert((CodeType == "UniLRC" || CodeType == "AzureLRC" || CodeType == "OptimalLRC" || CodeType == "UniformLRC" || CodeType == "ShuffledUniformLRC") && "Error: CodeType must be UniLRC, AzureLRC, OptimalLRC, or UniformLRC");
+    assert((AppendMode == "REP_MODE" || AppendMode == "CACHED_MODE") && "Error: AppendMode must be REP_MODE or CACHED_MODE");
+    assert((CodeType == "AzureLRC" || CodeType == "OptimalLRC" || CodeType == "UniformLRC" || CodeType == "ShuffledUniformLRC") && "Error: CodeType must be AzureLRC, OptimalLRC, or UniformLRC");
     assert(DatanodeNumPerCluster > 0 && "Error: DatanodeNumPerCluster must be greater than 0");
     assert(ClusterNum > 0 && "Error: ClusterNum must be greater than 0");
-    if (CodeType == "UniLRC")
-    {
-      assert(DatanodeNumPerCluster > n / z && "Error: DatanodeNumPerCluster must be greater than n / z");
-      assert(ClusterNum > z && "Error: ClusterNum must be greater than z");
-    }
     if (CodeType == "AzureLRC")
     {
       assert(DatanodeNumPerCluster > k / z + 1 && "Error: DatanodeNumPerCluster must be greater than k / z + 1");
@@ -77,20 +72,10 @@ namespace ECProject
       z = std::stoi(elem->GetText());
     if (auto elem = root->FirstChildElement("CodeType"))
       CodeType = std::string(elem->GetText());
-    if (CodeType == "UniLRC")
-    {
-      if (auto elem = root->FirstChildElement("alpha"))
-        alpha = std::stoi(elem->GetText());
-      k = alpha * z * z - alpha * z;
-      r = alpha * z;
-    }
-    else
-    {
-      if (auto elem = root->FirstChildElement("k"))
-        k = std::stoi(elem->GetText());
-      if (auto elem = root->FirstChildElement("r"))
-        r = std::stoi(elem->GetText());
-    }
+    if (auto elem = root->FirstChildElement("k"))
+      k = std::stoi(elem->GetText());
+    if (auto elem = root->FirstChildElement("r"))
+      r = std::stoi(elem->GetText());
     n = k + r + z;
 
     if (auto elem = root->FirstChildElement("DatanodeNumPerCluster"))

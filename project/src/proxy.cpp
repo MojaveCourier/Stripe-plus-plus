@@ -97,8 +97,8 @@ namespace ECProject
       merge_parity_info.set_block_key(std::string(block_key));
       merge_parity_info.set_block_id(block_id);
       std::string node_ip_port = std::string(ip) + ":" + std::to_string(port);
-      // REP_MODE; UNILRC_MODE; CACHED_MODE
-      if (append_mode == "UNILRC_MODE" || append_mode == "CACHED_MODE")
+      // REP_MODE; CACHED_MODE
+      if (append_mode == "CACHED_MODE")
       {
         grpc::Status stat = m_datanode_ptrs[node_ip_port]->handleMergeParity(&context, merge_parity_info, &result);
       }
@@ -653,12 +653,7 @@ namespace ECProject
           block_idxs.push_back(request_copy->blockids(i));
         }
         std::vector<unsigned char *> block_ptrs = convertToUnsignedCharArray(get_bufs);
-        if (code_type == "UniLRC")
-        {
-          std::cout << "[Proxy" << m_self_cluster_id << "][Degrade read] decode_unilrc" << std::endl;
-          decode_unilrc(m_sys_config->k, m_sys_config->r, m_sys_config->z, request_copy->datanodeip_size(), &block_idxs, block_ptrs.data(), reinterpret_cast<unsigned char *>(res_buf), m_sys_config->BlockSize);
-        }
-        else if (code_type == "AzureLRC")
+        if (code_type == "AzureLRC")
         {
           std::cout << "[Proxy" << m_self_cluster_id << "][Degrade read] decode_azure_lrc" << std::endl;
           decode_azure_lrc(m_sys_config->k, m_sys_config->r, m_sys_config->z, request_copy->datanodeip_size(), &block_idxs, block_ptrs.data(), reinterpret_cast<unsigned char *>(res_buf), m_sys_config->BlockSize, request_copy->failed_block_id());
@@ -786,12 +781,7 @@ namespace ECProject
       std::vector<unsigned char *> block_ptrs = convertToUnsignedCharArray(get_bufs);
 
       std::chrono::high_resolution_clock::time_point t1 = std::chrono::high_resolution_clock::now();
-      if (code_type == "UniLRC")
-      {
-        std::cout << "[Proxy" << m_self_cluster_id << "][Degrade read] decode_unilrc" << std::endl;
-        decode_unilrc(m_sys_config->k, m_sys_config->r, m_sys_config->z, request_copy->datanodeip_size(), &block_idxs, block_ptrs.data(), reinterpret_cast<unsigned char *>(res_buf), m_sys_config->BlockSize);
-      }
-      else if (code_type == "AzureLRC")
+      if (code_type == "AzureLRC")
       {
         std::cout << "[Proxy" << m_self_cluster_id << "][Degrade read] decode_azure_lrc" << std::endl;
         decode_azure_lrc(m_sys_config->k, m_sys_config->r, m_sys_config->z, request_copy->datanodeip_size(), &block_idxs, block_ptrs.data(), reinterpret_cast<unsigned char *>(res_buf), m_sys_config->BlockSize, request_copy->failed_block_id());
@@ -927,11 +917,7 @@ namespace ECProject
       std::string replaced_node_ip = recovery_request->replaced_node_ip();
       int replaced_node_port = recovery_request->replaced_node_port();
 
-      if (code_type == "UniLRC")
-      {
-        decode_unilrc(m_sys_config->k, m_sys_config->r, m_sys_config->z, recovery_request->datanodeip_size(), &block_idxs, block_ptrs.data(), reinterpret_cast<unsigned char *>(res_buf), m_sys_config->BlockSize);
-      }
-      else if (code_type == "AzureLRC")
+      if (code_type == "AzureLRC")
       {
         decode_azure_lrc(m_sys_config->k, m_sys_config->r, m_sys_config->z, recovery_request->datanodeip_size(), &block_idxs, block_ptrs.data(), reinterpret_cast<unsigned char *>(res_buf), m_sys_config->BlockSize, failed_block_id);
       }
@@ -1105,11 +1091,7 @@ namespace ECProject
         std::string replaced_node_ip = recovery_request->replaced_node_ip();
         int replaced_node_port = recovery_request->replaced_node_port();
 
-        if (code_type == "UniLRC")
-        {
-          decode_unilrc(m_sys_config->k, m_sys_config->r, m_sys_config->z, recovery_request->datanodeip_size(), &block_idxs, block_ptrs.data(), reinterpret_cast<unsigned char *>(res_buf), m_sys_config->BlockSize);
-        }
-        else if (code_type == "AzureLRC")
+        if (code_type == "AzureLRC")
         {
           decode_azure_lrc(m_sys_config->k, m_sys_config->r, m_sys_config->z, recovery_request->datanodeip_size(), &block_idxs, block_ptrs.data(), reinterpret_cast<unsigned char *>(res_buf), m_sys_config->BlockSize, failed_block_id);
         }
@@ -1336,11 +1318,7 @@ namespace ECProject
             block_idxs.push_back(block_ids[i][j]);
           }
           std::vector<unsigned char *> block_ptrs = convertToUnsignedCharArray(get_bufs[i]);
-          if(code_type == "UniLRC")
-          {
-            decode_unilrc(m_sys_config->k, m_sys_config->r, m_sys_config->z, datanode_num[i], &block_idxs, block_ptrs.data(), reinterpret_cast<unsigned char *>(res_bufs[i]), m_sys_config->BlockSize);
-          }
-          else if(code_type == "AzureLRC")
+          if(code_type == "AzureLRC")
           {
             decode_azure_lrc(m_sys_config->k, m_sys_config->r, m_sys_config->z, datanode_num[i], &block_idxs, block_ptrs.data(), reinterpret_cast<unsigned char *>(res_bufs[i]), m_sys_config->BlockSize, failed_block_ids[i]);
           }
@@ -1387,11 +1365,7 @@ namespace ECProject
             block_idxs.push_back(block_ids[i][j]);
           }
           std::vector<unsigned char *> block_ptrs = convertToUnsignedCharArray(get_bufs[i]);
-          if(code_type == "UniLRC")
-          {
-            decode_unilrc(m_sys_config->k, m_sys_config->r, m_sys_config->z, datanode_num[i], &block_idxs, block_ptrs.data(), reinterpret_cast<unsigned char *>(res_bufs[i]), m_sys_config->BlockSize);
-          }
-          else if(code_type == "AzureLRC")
+          if(code_type == "AzureLRC")
           {
             decode_azure_lrc(m_sys_config->k, m_sys_config->r, m_sys_config->z, datanode_num[i], &block_idxs, block_ptrs.data(), reinterpret_cast<unsigned char *>(res_bufs[i]), m_sys_config->BlockSize, failed_block_ids[i]);
           }

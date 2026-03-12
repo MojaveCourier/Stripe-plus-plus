@@ -76,7 +76,7 @@ sh test.sh
 
 #### Attention
 
-- In `parameterConfiguration.xml`, if `CodeType` is UniLRC, the `k`, `r` is computed based on `alpha` and `z`; if `CodeType` is AzureLRC, OptimalLRC or UniformLRC, the `k`, `r`, and `z` are directly specified.
+- In `parameterConfiguration.xml`, for `CodeType` AzureLRC, OptimalLRC or UniformLRC, the `k`, `r`, and `z` are directly specified.
 - start_proxy.sh and start_coordinator.sh scripts need adjustment for different environments.
 
 

@@ -190,78 +190,6 @@ ECProject::get_shuffled_uniform_lrc_local_group(const int k, const int g, const 
     return local_group;
 }
 
-void ECProject::encode_unilrc(int k, int r, int z, unsigned char **data_ptrs, unsigned char **parity_ptrs, int block_size)
-{
-    for(int i = 0; i < r + z; i++){
-        memset(parity_ptrs[i], 0, block_size);
-    }
-    int m = k + r;
-    unsigned char *encode_matrix = new unsigned char[(m + z) * k];
-    memset(encode_matrix, 0, (m + z) * k);
-    gf_gen_rs_matrix1(encode_matrix, m, k);
-    for(int i = 0; i < k; i++){
-        int row = i / (k / z);
-        encode_matrix[(m + row) * k + i] = 1;
-    }
-    for(int i = 0; i < z; i++){
-        for(int j = 0; j < k; j++){
-            for(int l = 0; l < r / z; l++){
-                encode_matrix[(m + i) * k + j] ^= encode_matrix[(k + i * r / z + l) * k + j];
-            }
-        }
-    }
-
-    unsigned char *g_tbls = new unsigned char[k * (r + z) * 32];
-    ec_init_tables(k, r + z, &encode_matrix[k * k], g_tbls);
-    ec_encode_data_avx2(block_size, k, r + z, g_tbls, data_ptrs, parity_ptrs);
-
-    delete[] encode_matrix;
-    delete[] g_tbls;
-}
-
-void ECProject::partial_encode_unilrc(int k, int r, int z, int data_block_num, unsigned char **data_ptrs, unsigned char **parity_ptrs, int block_size)
-{
-    for(int i = 0; i < r + z; i++){
-        memset(parity_ptrs[i], 0, block_size);
-    }
-    int m = k + r;
-    unsigned char *encode_matrix = new unsigned char[(m + z) * k];
-    memset(encode_matrix, 0, (m + z) * k);
-    gf_gen_rs_matrix1(encode_matrix, m, k);
-    for(int i = 0; i < k; i++){
-        int row = i / (k / z);
-        encode_matrix[(m + row) * k + i] = 1;
-    }
-    for(int i = 0; i < z; i++){
-        for(int j = 0; j < k; j++){
-            for(int l = 0; l < r / z; l++){
-                encode_matrix[(m + i) * k + j] ^= encode_matrix[(k + i * r / z + l) * k + j];
-            }
-        }
-    }
-
-    unsigned char *sub_matrix = new unsigned char[(r + z) * data_block_num];
-    for (int i = 0; i < r + z; i++) {
-        memcpy(sub_matrix + i * data_block_num, 
-               encode_matrix + (k + i) * k,      
-               data_block_num);                   
-    }
-
-    unsigned char *g_tbls = new unsigned char[data_block_num * (r + z) * 32];
-    ec_init_tables(data_block_num, r + z, sub_matrix, g_tbls);
-
-    ec_encode_data_avx2(block_size, 
-                        data_block_num,  
-                        r + z,           
-                        g_tbls, 
-                        data_ptrs,       
-                        parity_ptrs);
-
-    delete[] encode_matrix;
-    delete[] sub_matrix;
-    delete[] g_tbls;
-}
-
 void ECProject::encode_azure_lrc(int k, int r, int z, unsigned char **data_ptrs, unsigned char **parity_ptrs, int block_size)
 {
     for(int i = 0; i < r + z; i++){
@@ -712,18 +640,6 @@ void ECProject::partial_encode_shuffled_uniform_lrc(int k, int r, int z, int dat
     delete[] sub_matrix;
     delete[] g_tbls;
     delete[] local_vector;
-}
-
-void ECProject::decode_unilrc(const int k, const int r, const int z, const int block_num,
-                              const std::vector<int> *block_indexes, unsigned char **block_ptrs, unsigned char *res_ptr, int block_size)
-{
-    memset(res_ptr, 0, block_size);
-    unsigned char *vect_ptrs[block_num + 1];
-    for(int i = 0; i < block_num; i++){
-        vect_ptrs[i] = block_ptrs[i];
-    }
-    vect_ptrs[block_num] = res_ptr;
-    xor_gen_avx(block_num + 1, block_size, (void **)vect_ptrs);
 }
 
 void ECProject::decode_azure_lrc(const int k, const int r, const int z, const int block_num,

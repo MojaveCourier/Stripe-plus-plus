@@ -68,28 +68,15 @@ namespace ECProject
   {
     assert(node_slice_sizes_per_cluster->size() == m_sys_config->z);
     assert(modified_data_block_nums_per_cluster->size() == m_sys_config->z);
-    assert(append_mode == "UNILRC_MODE" || append_mode == "CACHED_MODE");
+    assert(append_mode == "CACHED_MODE");
 
     int unit_size = m_sys_config->UnitSize;
     int num_unit_stripes = (curr_logical_offset + append_size - 1) / (unit_size * m_sys_config->k) - curr_logical_offset / (unit_size * m_sys_config->k) + 1;
     int curr_block_id = (curr_logical_offset / unit_size) % m_sys_config->k;
-    int num_units = (curr_logical_offset + append_size - 1) / unit_size - curr_logical_offset / unit_size + 1;
     int start_data_block_id = curr_block_id;
 
     parity_slice_size = num_unit_stripes * unit_size;
     parity_slice_offset = curr_logical_offset / (unit_size * m_sys_config->k) * unit_size;
-    if (append_mode == "UNILRC_MODE")
-    {
-      if (num_units == 1)
-      {
-        parity_slice_size = append_size;
-        parity_slice_offset += curr_logical_offset % unit_size;
-      }
-      if (num_unit_stripes > 1 && (curr_logical_offset + append_size - 1) % (unit_size * m_sys_config->k) < unit_size - 1)
-      {
-        parity_slice_size = (num_unit_stripes - 1) * unit_size + (curr_logical_offset + append_size - 1) % (unit_size * m_sys_config->k) + 1;
-      }
-    }
 
     std::map<int, int> block_to_slice_sizes;
     int tmp_size = append_size;
@@ -274,14 +261,6 @@ namespace ECProject
       }
       data_block_num_per_group.push_back(0);
     }
-    else if (code_type == "UniLRC")
-    {
-      int local_data_num = k / z;
-      for (int i = 0; i < z; i++)
-      {
-        data_block_num_per_group.push_back(local_data_num);
-      }
-    }
     return data_block_num_per_group;
   }
 
@@ -314,14 +293,6 @@ namespace ECProject
         global_pairty_block_num_per_group.push_back(0);
       }
       global_pairty_block_num_per_group.push_back(r);
-    }
-    else if (code_type == "UniLRC")
-    {
-      int local_global_parity_num = r / z;
-      for (int i = 0; i < z; i++)
-      {
-        global_pairty_block_num_per_group.push_back(local_global_parity_num);
-      }
     }
     return global_pairty_block_num_per_group;
   }
@@ -357,13 +328,6 @@ namespace ECProject
       local_parity_block_num_per_group.push_back(0);
     }
     else if (code_type == "UniformLRC")
-    {
-      for (int i = 0; i < z; i++)
-      {
-        local_parity_block_num_per_group.push_back(1);
-      }
-    }
-    else if (code_type == "UniLRC")
     {
       for (int i = 0; i < z; i++)
       {
@@ -674,7 +638,7 @@ namespace ECProject
     coordinator_proto::ReplyProxyIPsPorts reply;
     request.set_key(m_clientID);
     request.set_valuesizebytes(static_cast<size_t>(m_sys_config->BlockSize) *static_cast<size_t>(m_sys_config->k));
-    request.set_append_mode("UNILRC_MODE");
+    request.set_append_mode("CACHED_MODE");
     grpc::Status status = m_coordinator_ptr->uploadSetValue(&get_proxy_ip_port, request, &reply);
 
     if (!status.ok())
@@ -689,7 +653,7 @@ namespace ECProject
       std::unique_ptr<bool[]> if_commit_arr(new bool[reply.append_keys_size()]);
       std::fill_n(if_commit_arr.get(), reply.append_keys_size(), false);
 
-      assert(m_sys_config->CodeType == "UniLRC" || m_sys_config->CodeType == "OptimalLRC" || m_sys_config->CodeType == "UniformLRC" || m_sys_config->CodeType == "AzureLRC");
+      assert(m_sys_config->CodeType == "OptimalLRC" || m_sys_config->CodeType == "UniformLRC" || m_sys_config->CodeType == "AzureLRC");
       std::vector<int> data_block_num_per_group = get_data_block_num_per_group(m_sys_config->k, m_sys_config->r, m_sys_config->z, m_sys_config->CodeType);
       std::vector<int> global_parity_block_num_per_group = get_global_parity_block_num_per_group(m_sys_config->k, m_sys_config->r, m_sys_config->z, m_sys_config->CodeType);
       std::vector<int> local_parity_block_num_per_group = get_local_parity_block_num_per_group(m_sys_config->k, m_sys_config->r, m_sys_config->z, m_sys_config->CodeType);
@@ -698,12 +662,7 @@ namespace ECProject
       std::vector<char *> parity_ptr_array;
       parity_ptr_array.insert(parity_ptr_array.end(), global_parity_ptr_array.begin(), global_parity_ptr_array.end());
       parity_ptr_array.insert(parity_ptr_array.end(), local_parity_ptr_array.begin(), local_parity_ptr_array.end());
-      if (m_sys_config->CodeType == "UniLRC")
-      {
-        //ECProject::encode_unilrc(m_sys_config->k, m_sys_config->r, m_sys_config->z, reinterpret_cast<unsigned char **>(data_ptr_array.data()), reinterpret_cast<unsigned char **>(global_parity_ptr_array.data()), reinterpret_cast<unsigned char **>(local_parity_ptr_array.data()), m_sys_config->BlockSize);
-        ECProject::encode_unilrc(m_sys_config->k, m_sys_config->r, m_sys_config->z, reinterpret_cast<unsigned char **>(data_ptr_array.data()), reinterpret_cast<unsigned char **>(parity_ptr_array.data()), m_sys_config->BlockSize);
-      }
-      else if (m_sys_config->CodeType == "OptimalLRC")
+      if (m_sys_config->CodeType == "OptimalLRC")
       {
         //ECProject::encode_optimal_lrc(m_sys_config->k, m_sys_config->r, m_sys_config->z, reinterpret_cast<unsigned char **>(data_ptr_array.data()), reinterpret_cast<unsigned char **>(global_parity_ptr_array.data()), reinterpret_cast<unsigned char **>(local_parity_ptr_array.data()), m_sys_config->BlockSize);
         ECProject::encode_optimal_lrc(m_sys_config->k, m_sys_config->r, m_sys_config->z, reinterpret_cast<unsigned char **>(data_ptr_array.data()), reinterpret_cast<unsigned char **>(parity_ptr_array.data()), m_sys_config->BlockSize);
@@ -1085,10 +1044,6 @@ namespace ECProject
     else if(m_sys_config->CodeType == "UniformLRC")
     {
       parameters.push_back(2);
-    }
-    else if(m_sys_config->CodeType == "UniLRC")
-    {
-      parameters.push_back(3);
     }
     else if(m_sys_config->CodeType == "ShuffledUniformLRC")
     {
